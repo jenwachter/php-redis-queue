@@ -1,0 +1,75 @@
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard | Redis Queue</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+    }
+
+    .content {
+      align-items: start;
+      column-gap: 2em;
+      display: grid;
+      grid-template-columns: [nav] 10em [main] auto;
+      grid-auto-rows: auto;
+    }
+
+    h1 {
+      background-color: #000;
+      color: #fff;
+      margin: 0 0 1em 0;
+      padding: 1em;
+      width: 100%
+    }
+
+    table {
+      table-layout: fixed;
+      width: 100%
+    }
+
+    table table {
+      table-layout: auto;
+    }
+
+    td {
+      border: 1px solid #ccc;
+      vertical-align: top;
+    }
+
+    td.value {
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Redis Queue</h1>
+
+  <div class="content">
+
+    <nav>
+      <ul>
+        {% for queue in nav %}
+          <li><a href="{{ baseURL }}/queues/{{ queue }}">{{ queue }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+
+    <main>
+      {% block main %}
+      {% endblock %}
+    </main>
+
+  </div>
+
+</div>
+
+</body>
+</html>

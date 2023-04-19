@@ -1,0 +1,21 @@
+{
+  "name": "jenwachter/php-redis-queue",
+  "description": "",
+  "license": "MIT",
+  "homepage": "http://github.com/jenwachter/php-redis-queue",
+  "authors": [
+    {
+      "name": "Jen Wachter",
+      "email": "jenleighkelly@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4" : {
+      "PhpRedisQueue\\" : ["src/"]
+    }
+  },
+  "require": {
+    "predis/predis": "^2.1",
+    "psr/log": "^1.0"
+  }
+}

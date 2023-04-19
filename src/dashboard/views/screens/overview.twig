@@ -1,0 +1,17 @@
+{% extends 'layouts/dashboard.twig' %}
+{% import 'macros/print.twig' as printMacros %}
+
+{% block main %}
+  <table>
+    <tr>
+      <th>Failed</th>
+    </tr>
+    <tr>
+      <td>
+        {% for record in failed %}
+          {{ printMacros.printRecord(record) }}
+        {% endfor %}
+      </td>
+    </tr>
+  </table>
+{% endblock %}

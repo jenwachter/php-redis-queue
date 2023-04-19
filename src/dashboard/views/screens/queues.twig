@@ -1,0 +1,10 @@
+{% extends 'layouts/dashboard.twig' %}
+{% import 'macros/print.twig' as printMacros %}
+
+{% block main %}
+  <ul>
+    {% for queue in queues %}
+      <li><a href="{{ baseURL }}/queues/{{ queue }}">{{ queue }}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}
