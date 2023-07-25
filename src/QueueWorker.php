@@ -92,7 +92,7 @@ class QueueWorker
 
   public function work()
   {
-    while($jsonData = $this->redis->blmove($this->pending, $this->processing, 'LEFT', 'LEFT', 0)) {
+    while($jsonData = $this->checkQueue()) {
 
       $data = json_decode($jsonData, true);
 
@@ -148,6 +148,11 @@ class QueueWorker
 
       sleep($this->config['wait']);
     }
+  }
+
+  protected function checkQueue()
+  {
+    return $this->redis->blmove($this->pending, $this->processing, 'LEFT', 'LEFT', 0);
   }
 
   /**
