@@ -11,7 +11,7 @@
   ],
   "autoload": {
     "psr-4" : {
-      "PhpRedisQueue\\" : ["src/"]
+      "PhpRedisQueue\\" : ["src/", "tests/src/", "tests/mocks/"]
     }
   },
   "require": {
