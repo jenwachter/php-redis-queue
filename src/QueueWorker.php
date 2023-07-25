@@ -78,6 +78,8 @@ class QueueWorker
    */
   public function __construct(protected \Predis\Client $redis, string $queue, array $config = [])
   {
+    $this->queueName = $queue;
+
     $this->pending = 'php-redis-queue:client:' . $queue;
     $this->processing = $this->pending . ':processing';
     $this->success = $this->pending . ':success';
@@ -99,11 +101,12 @@ class QueueWorker
       $jobName = $data['meta']['jobName'];
 
       if (!isset($this->callbacks[$jobName])) {
-        $this->log('warning', 'No callback set for job', ['context' => $data]);
 
         $this->moveToStatusQueue($data, false);
         $this->saveJobStatus($data, 'failed');
 
+        $message = "No callback set for `$jobName` job in $this->queueName queue.";
+        $this->log('warning', $message, ['context' => $data]);
         continue;
       }
 
