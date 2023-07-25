@@ -31,6 +31,12 @@ class QueueWorker
      * @var int
      */
     'processedQueueLimit' => 5000,
+
+    /**
+     * Number of seconds to wait between jobs
+     * @var int
+     */
+    'wait' => 1,
   ];
 
   protected $config = [];
@@ -140,8 +146,7 @@ class QueueWorker
         $this->deleteJob($data['meta']['id']);
       }
 
-      // wait a second before checking the queue again
-      sleep(1);
+      sleep($this->config['wait']);
     }
   }
 
