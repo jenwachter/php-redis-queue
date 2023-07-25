@@ -26,29 +26,35 @@ trait UsesQueues
   }
 
   /**
-   * Save/update the status of a job.
-   * @param array $data
-   * @param $status
-   * @return \Predis\Response\Status
+   * @param array $data      Job data
+   * @param string $with     Meta key
+   * @param mixed $withValue Meta value
+   * @return array New job data
    */
-  protected function saveJobStatus(array $data, $status)
+  protected function saveJobWith(array $data, string $with, mixed $withValue): array
   {
-    $data['meta']['status'] = $status;
-    return $this->saveJob($data);
+    $data['meta'][$with] = $withValue;
+    $what = $this->saveJob($data);
+
+    return $data;
   }
 
   /**
-   * Save/update the status of a job.
-   * @param array $data
-   * @param $returnData
-   * @return array|\Predis\Response\Status
+   * Save a job without a piece of meta
+   * @param array $data      Job data
+   * @param string $without  Meta key to remove
+   * @return array New job data
    */
-  protected function removeJobStatus(array $data, $returnData = false)
+  protected function saveJobWithout(array $data, string ...$without): array
   {
-    unset($data['meta']['status']);
-    $result = $this->saveJob($data);
+    foreach ($without as $key) {
+      if (isset($data['meta'][$key])) {
+        unset($data['meta'][$key]);
+        $this->saveJob($data);
+      }
+    }
 
-    return $returnData ? $data : $result;
+    return $data;
   }
 
   /**

@@ -20,13 +20,6 @@ class QueueWorker
     'logger' => null,
 
     /**
-     * Array of job names that the client will take care of cleaning
-     * up the job data using Client::deleteJob()
-     * @var array
-     */
-    'manualJobCleanup' => [],
-
-    /**
      * Pass -1 for no queue limit
      * @var int
      */
@@ -98,55 +91,26 @@ class QueueWorker
 
       $data = json_decode($jsonData, true);
 
+      $this->saveJobWith($data, 'status', 'processing');
+
       $jobName = $data['meta']['jobName'];
 
       if (!isset($this->callbacks[$jobName])) {
-
-        $this->moveToStatusQueue($data, false);
-        $this->saveJobStatus($data, 'failed');
-
         $message = "No callback set for `$jobName` job in $this->queueName queue.";
         $this->log('warning', $message, ['context' => $data]);
+        $this->onJobCompletion($data, 'failed', $message);
         continue;
       }
 
-      // update status
-      $this->saveJobStatus($data, 'processing');
-
-      // call the before callback
       $this->hook($jobName . '_before', $data);
 
-      // perform the work
       try {
         $context = call_user_func($this->callbacks[$jobName], $data['job']);
-        $success = true;
+        $this->onJobCompletion($data, 'success', $context);
       } catch (\Throwable $e) {
         $context = $this->getExceptionData($e);
-        $success = false;
         $this->log('warning', 'Queue job failed', ['data' => $data]);
-      }
-
-      // remove job from processing queue
-      $this->redis->lrem($this->processing, 1, $jsonData);
-
-      // add context
-      $data['context'] = $context;
-
-      $this->moveToStatusQueue($data, $success);
-
-      $this->saveJobStatus($data, $success ? 'success' : 'failed');
-
-      if ($success && $data['meta']['original']) {
-        // recovered job
-        $removed = $this->redis->lrem($this->failed, 1, json_encode($data['meta']['original']));
-        $this->deleteJob($data['meta']['original']['meta']['id']);
-      }
-
-      // call the after callback
-      $this->hook($jobName . '_after', $data, $success);
-
-      if ($success && !in_array($jobName, $this->config['manualJobCleanup'])) {
-        $this->deleteJob($data['meta']['id']);
+        $this->onJobCompletion($data, 'failed', $context);
       }
 
       sleep($this->config['wait']);
@@ -172,16 +136,71 @@ class QueueWorker
     $this->callbacks[$name] = $callable;
   }
 
-  protected function moveToStatusQueue(array $data, bool $success)
+  protected function onJobCompletion(array $job, string $status, $context = null)
   {
-    $jsonData = json_encode($data);
+    $this->removeFromProcessing($job);
+    $this->moveToStatusQueue($job['meta']['id'], $status === 'success');
 
+    $job = $this->saveJobWith($job, 'status', $status);
+
+    if ($context) {
+      $job = $this->saveJobWith($job, 'context', $context);
+    }
+
+    $this->hook($job['meta']['jobName'] . '_after', $job, false);
+
+    if ($status === 'success' && $job['meta']['original']) {
+      // remove the old job from the failed queue
+      $this->redis->lrem($this->failed, -1, json_encode($job['meta']['original']['meta']['id']));
+
+      // remove the old job's data
+      $this->deleteJob($job['meta']['original']['meta']['id']);
+    }
+  }
+
+  /**
+   * Remove a job from the processing queue
+   * @param array $job Job data
+   * @return int
+   */
+  protected function removeFromProcessing(array $job): int
+  {
+    return $this->redis->lrem($this->processing, -1, json_encode($job));
+  }
+
+  /**
+   * Move a job to a status queue (success or failed)
+   * @param int $id       Job ID
+   * @param bool $success Success (true) or failed (false)
+   * @return void
+   */
+  protected function moveToStatusQueue(int $id, bool $success)
+  {
     $list = $success ? $this->success : $this->failed;
-    $this->redis->lpush($list, $jsonData);
+    $this->redis->lpush($list, $id);
 
-    // trim processed lists to keep them tidy
-    if ($this->config['processedQueueLimit'] > -1) {
-      $this->redis->ltrim($list, 0, $this->config['processedQueueLimit']);
+    $this->trimList($list);
+  }
+
+  protected function trimList(string $list)
+  {
+    if ($this->config['processedQueueLimit'] === -1) {
+      return;
+    }
+
+    $length = $this->redis->llen($list);
+
+    if ($length > $this->config['processedQueueLimit']) {
+
+      // get the IDs we're going to remove
+      $ids = $this->redis->lrange($list,  $this->config['processedQueueLimit'], $length);
+
+      // trim list
+      $this->redis->ltrim($list, 0, $this->config['processedQueueLimit'] - 1);
+
+      // remove jobs
+      $ids = array_map(fn ($id) => "php-redis-queue:jobs:$id", $ids);
+      $this->redis->del($ids);
     }
   }
 
@@ -191,8 +210,8 @@ class QueueWorker
       'exception_type' => get_class($e),
       'exception_code' => $e->getCode(),
       'exception_message' => $e->getMessage(),
-      'exception_file' => $e->getFile(),
-      'exception_line' => $e->getLine(),
+      // 'exception_file' => $e->getFile(),
+      // 'exception_line' => $e->getLine(),
     ];
   }
 

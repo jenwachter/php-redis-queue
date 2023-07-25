@@ -54,7 +54,7 @@ class Client
     $this->redis->rpush('php-redis-queue:client:' . $queue, json_encode($data));
 
     // add status and save job
-    $this->saveJobStatus($data, 'pending');
+    $this->saveJobWith($data, 'status', 'pending');
 
     return $id;
   }
@@ -72,11 +72,6 @@ class Client
     if (!$data) {
       throw new \Exception("Job #$jobId not found. Cannot rerun.");
     }
-
-    $data = $this->removeJobStatus($data, true);
-
-    // delete old job
-    $this->deleteJob($jobId);
 
     return $this->push($data['meta']['queue'], $data['meta']['jobName'], $data['job'], $data);
   }
