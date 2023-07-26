@@ -109,22 +109,22 @@ class QueueWorkerTest extends Base
 
     $mock->expects($this->exactly(1))
       ->method('callback_before')
-      ->with($this->identicalTo($this->getJobData(jobName: 'jobname', jobData: ['jobdata' => 'some data'], encode: false)));
+      ->with($this->getJobData(jobName: 'jobname', jobData: ['jobdata' => 'some data'], encode: false));
 
     $mock->expects($this->exactly(1))
       ->method('callback')
-      ->with($this->identicalTo(['jobdata' => 'some data']))
+      ->with(['jobdata' => 'some data'])
       ->willReturn('something returned from callback');
 
     $mock->expects($this->exactly(1))
       ->method('callback_after')
-      ->with($this->identicalTo($this->getJobData(
+      ->with($this->getJobData(
         jobName: 'jobname',
         jobData: ['jobdata' => 'some data'],
         status: 'success',
         context: 'something returned from callback',
         encode: false
-      ), $this->identicalTo(true)));
+      ), true);
 
     // add callbacks
     $worker->addCallback('jobname_before', [$mock, 'callback_before']);
@@ -183,12 +183,12 @@ class QueueWorkerTest extends Base
 
     $mock->expects($this->exactly(1))
       ->method('callback')
-      ->with($this->identicalTo([]))
+      ->with([])
       ->will($this->throwException(new \Exception('Job failed', 123)));
 
     $mock->expects($this->exactly(1))
       ->method('callback_after')
-      ->with($this->identicalTo($this->getJobData(
+      ->with($this->getJobData(
         encode: false,
         status: 'failed',
         context: [
@@ -196,7 +196,7 @@ class QueueWorkerTest extends Base
           'exception_code' => 123,
           'exception_message' => 'Job failed'
         ]
-      )), $this->identicalTo(false));
+      ), false);
 
     // add callbacks
     $worker->addCallback('default', [$mock, 'callback']);

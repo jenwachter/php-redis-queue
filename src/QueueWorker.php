@@ -147,7 +147,7 @@ class QueueWorker
       $job = $this->saveJobWith($job, 'context', $context);
     }
 
-    $this->hook($job['meta']['jobName'] . '_after', $job, false);
+    $this->hook($job['meta']['jobName'] . '_after', $job, $status === 'success');
 
     if ($status === 'success' && $job['meta']['original']) {
       // remove the old job from the failed queue
