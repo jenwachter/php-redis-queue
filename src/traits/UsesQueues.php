@@ -62,7 +62,7 @@ trait UsesQueues
    * @param int|string $id
    * @return void
    */
-  public function deleteJob(int|string $id)
+  protected function deleteJob(int|string $id)
   {
     $this->redis->del($this->getJobKey($id));
   }
