@@ -23,7 +23,7 @@ class QueueWorker
      * Pass -1 for no queue limit
      * @var int
      */
-    'processedQueueLimit' => 5000,
+    'processedListsLimit' => 5000,
 
     /**
      * Number of seconds to wait between jobs
@@ -184,19 +184,19 @@ class QueueWorker
 
   protected function trimList(string $list)
   {
-    if ($this->config['processedQueueLimit'] === -1) {
+    if ($this->config['processedListsLimit'] === -1) {
       return;
     }
 
     $length = $this->redis->llen($list);
 
-    if ($length > $this->config['processedQueueLimit']) {
+    if ($length > $this->config['processedListsLimit']) {
 
       // get the IDs we're going to remove
-      $ids = $this->redis->lrange($list,  $this->config['processedQueueLimit'], $length);
+      $ids = $this->redis->lrange($list,  $this->config['processedListsLimit'], $length);
 
       // trim list
-      $this->redis->ltrim($list, 0, $this->config['processedQueueLimit'] - 1);
+      $this->redis->ltrim($list, 0, $this->config['processedListsLimit'] - 1);
 
       // remove jobs
       $ids = array_map(fn ($id) => "php-redis-queue:jobs:$id", $ids);
