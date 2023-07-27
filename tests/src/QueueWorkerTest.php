@@ -6,14 +6,14 @@ class QueueWorkerTest extends Base
 {
   public function testWork__noCallback()
   {
-    $worker = new QueueWorkerMock($this->predis, 'queuename', ['wait' => 0]);
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $client = new ClientMock($this->predis);
 
     // put something in the queue
     $client->push('queuename');
 
     // set the worker to work
-    $worker->work();
+    $worker->work(false);
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
@@ -37,7 +37,7 @@ class QueueWorkerTest extends Base
    */
   public function testWork__callbacksFire()
   {
-    $worker = new QueueWorkerMock($this->predis, 'queuename', ['wait' => 0]);
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $client = new ClientMock($this->predis);
 
     $mock = $this->getMockBuilder(\StdClass::class)
@@ -69,7 +69,7 @@ class QueueWorkerTest extends Base
     $this->assertEquals($this->getJobData(id: 2), $this->predis->lindex('php-redis-queue:client:queuename', 1));
 
     // set the worker to work
-    $worker->work();
+    $worker->work(false);
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
@@ -99,7 +99,7 @@ class QueueWorkerTest extends Base
    */
   public function testWork__successulJob()
   {
-    $worker = new QueueWorkerMock($this->predis, 'queuename', ['wait' => 0]);
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $client = new ClientMock($this->predis);
 
     $mock = $this->getMockBuilder(\StdClass::class)
@@ -144,7 +144,7 @@ class QueueWorkerTest extends Base
     );
 
     // set the worker to work
-    $worker->work();
+    $worker->work(false);
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
@@ -173,7 +173,7 @@ class QueueWorkerTest extends Base
    */
   public function testWork__failedJob()
   {
-    $worker = new QueueWorkerMock($this->predis, 'queuename', ['wait' => 0]);
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $client = new ClientMock($this->predis);
 
     $mock = $this->getMockBuilder(\StdClass::class)
@@ -209,7 +209,7 @@ class QueueWorkerTest extends Base
     $this->assertEquals($this->getJobData(), $this->predis->lindex('php-redis-queue:client:queuename', 0));
 
     // set the worker to work
-    $worker->work();
+    $worker->work(false);
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
@@ -242,7 +242,7 @@ class QueueWorkerTest extends Base
    */
   public function testWork__reranJob()
   {
-    $worker = new QueueWorkerMock($this->predis, 'queuename', ['wait' => 0]);
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $client = new ClientMock($this->predis);
 
     // add original job to the system
@@ -274,7 +274,7 @@ class QueueWorkerTest extends Base
     $this->assertEquals($this->getJobData(id: $newId, originalJobData: $originalJob), $this->predis->lindex('php-redis-queue:client:queuename', 0));
 
     // set the worker to work
-    $worker->work();
+    $worker->work(false);
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
@@ -294,8 +294,8 @@ class QueueWorkerTest extends Base
 
   public function testWork__trimProcessedLists()
   {
-    $worker = new QueueWorkerMock($this->predis, 'queuename', [
-      'processedQueueLimit' => 4,
+    $worker = new QueueWorker($this->predis, 'queuename', [
+      'processedListsLimit' => 4,
       'wait' => 0
     ]);
 
@@ -314,7 +314,7 @@ class QueueWorkerTest extends Base
     $this->assertEquals(4, $this->predis->llen('php-redis-queue:client:queuename'));
 
     // set the worker to work
-    $worker->work();
+    $worker->work(false);
 
     // 4 jobs in the success queue
     $this->assertEquals(4, $this->predis->llen('php-redis-queue:client:queuename:success'));
@@ -328,7 +328,7 @@ class QueueWorkerTest extends Base
     $client->push('queuename');
 
     // work again
-    $worker->work();
+    $worker->work(false);
 
     // still only 4 in the success
     $this->assertEquals(4, $this->predis->llen('php-redis-queue:client:queuename:success'));

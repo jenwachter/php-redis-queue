@@ -15,6 +15,14 @@ class QueueWorker
    */
   protected $defaultConfig = [
     /**
+     * Prevents PHP from timing out due to blmove()
+     * Pass NULL to ignore this setting and use
+     * your server's default setting (usually 60)
+     * See: https://www.php.net/manual/en/filesystem.configuration.php#ini.default-socket-timeout
+     * @var int
+     */
+    'default_socket_timeout' => -1,
+    /**
      * @var Psr\Log\LoggerInterface|null
      */
     'logger' => null,
@@ -85,9 +93,18 @@ class QueueWorker
     }
   }
 
-  public function work()
+   /**
+    * Undocumented function
+    * @param boolean $block
+    * @return void
+    */
+  public function work(bool $block = true)
   {
-    while($jsonData = $this->checkQueue()) {
+    if ($block && $this->default_socket_timeout !== null) {
+      ini_set('default_socket_timeout', $this->default_socket_timeout);
+    }
+
+    while($jsonData = $this->checkQueue($block)) {
 
       $data = json_decode($jsonData, true);
 
@@ -117,11 +134,6 @@ class QueueWorker
     }
   }
 
-  protected function checkQueue()
-  {
-    return $this->redis->blmove($this->pending, $this->processing, 'LEFT', 'LEFT', 0);
-  }
-
   /**
    * Add a callback for a specific job.
    * @param string $name       Name of the callback. There are three types of callbacks that can be added:
@@ -134,6 +146,15 @@ class QueueWorker
   public function addCallback(string $name, callable $callable)
   {
     $this->callbacks[$name] = $callable;
+  }
+
+  protected function checkQueue(bool $block = true)
+  {
+    if ($block) {
+      return $this->redis->blmove($this->pending, $this->processing, 'LEFT', 'LEFT', 0);
+    }
+    
+    return $this->redis->lmove($this->pending, $this->processing, 'LEFT', 'LEFT');
   }
 
   protected function onJobCompletion(array $job, string $status, $context = null)
