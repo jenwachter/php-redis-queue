@@ -4,6 +4,12 @@ namespace PhpRedisQueue;
 
 abstract class Base extends \PHPUnit\Framework\TestCase
 {
+  /**
+   * Predis
+   * @var \Predis\Client
+   */
+  protected $predis;
+
   public function setUp(): void
   {
     parent::setUp();

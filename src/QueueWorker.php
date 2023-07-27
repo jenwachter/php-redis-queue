@@ -43,6 +43,12 @@ class QueueWorker
   protected $config = [];
 
   /**
+   * Name of queue passed by client
+   * @var string
+   */
+  protected string $queueName;
+
+  /**
    * Name of the list that contains jobs waiting to be worked on
    * @var string
    */
