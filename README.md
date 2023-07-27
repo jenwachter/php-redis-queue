@@ -11,7 +11,7 @@ A simple background server queue utilizing Redis and PHP.
 ## Requirements
 
 * PHP >= 8.0
-* Redis >= 6.2
+* Redis >= 6.0
 
 ## Installation
 

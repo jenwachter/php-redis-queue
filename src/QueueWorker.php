@@ -15,7 +15,7 @@ class QueueWorker
    */
   protected $defaultConfig = [
     /**
-     * Prevents PHP from timing out due to blmove()
+     * Prevents PHP from timing out due to blpop()
      * Pass NULL to ignore this setting and use
      * your server's default setting (usually 60)
      * See: https://www.php.net/manual/en/filesystem.configuration.php#ini.default-socket-timeout
@@ -112,6 +112,8 @@ class QueueWorker
 
     while($jsonData = $this->checkQueue($block)) {
 
+      $this->redis->lpush($this->processing, $jsonData);
+
       $data = json_decode($jsonData, true);
 
       $this->saveJobWith($data, 'status', 'processing');
@@ -157,10 +159,10 @@ class QueueWorker
   protected function checkQueue(bool $block = true)
   {
     if ($block) {
-      return $this->redis->blmove($this->pending, $this->processing, 'LEFT', 'LEFT', 0);
+      return $this->redis->blpop($this->pending, 0);
     }
-    
-    return $this->redis->lmove($this->pending, $this->processing, 'LEFT', 'LEFT');
+
+    return $this->redis->lpop($this->pending);
   }
 
   protected function onJobCompletion(array $job, string $status, $context = null)
