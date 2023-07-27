@@ -34,13 +34,64 @@ class Client
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
    * @param array $original If this is a rerun of a job, this is data associated with the original job
-   * @return int            ID of job
+   * @return integer ID of job
    */
-  public function push(string $queue, string $jobName = 'default', array $jobData = [], array $original = [])
+  public function push(string $queue, string $jobName = 'default', array $jobData = [], array $original = []): int
+  {
+    $data = $this->compileJobData($queue, $jobName, $jobData, $original);
+
+    $this->redis->rpush('php-redis-queue:client:' . $queue, json_encode($data));
+
+    $this->saveJobWith($data, 'status', 'pending');
+
+    return $data['meta']['id'];
+  }
+
+  /**
+   * Pushes a job to the front of the queue
+   * @param string $queue   Queue name
+   * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
+   * @param array $jobData  Data associated with this job
+   * @param array $original If this is a rerun of a job, this is data associated with the original job
+   * @return integer ID of job
+   */
+  public function pushToFront(string $queue, string $jobName = 'default', array $jobData = [], array $original = []): int
+  {
+    $data = $this->compileJobData($queue, $jobName, $jobData, $original);
+
+    $this->redis->lpush('php-redis-queue:client:' . $queue, json_encode($data));
+
+    $this->saveJobWith($data, 'status', 'pending');
+
+    return $data['meta']['id'];
+  }
+
+   /**
+    * Rerun a job that previously failed.
+    * @param int $jobId     ID of job to rerun
+    * @return int           ID of new job
+    * @param boolean $front Push the new job to the front of the queue?
+    * @return int           ID of new job
+    * @throws \Exception
+    */
+  public function rerun(int $jobId, bool $front = false)
+  {
+    $data = $this->getJob($jobId);
+
+    if (!$data) {
+      throw new \Exception("Job #$jobId not found. Cannot rerun.");
+    }
+
+    $method = $front ? 'pushToFront' : 'push';
+
+    return $this->$method($data['meta']['queue'], $data['meta']['jobName'], $data['job'], $data);
+  }
+
+  protected function compileJobData(string $queue, string $jobName = 'default', array $jobData = [], array $original = []): array
   {
     $id = $this->redis->incr('php-redis-queue:meta:id');
 
-    $data = [
+    return [
       'meta' => [
         'jobName' => $jobName,
         'queue' => $queue, // used to debug processing and procecssed queues
@@ -50,30 +101,6 @@ class Client
       ],
       'job' => $jobData
     ];
-
-    $this->redis->rpush('php-redis-queue:client:' . $queue, json_encode($data));
-
-    // add status and save job
-    $this->saveJobWith($data, 'status', 'pending');
-
-    return $id;
-  }
-
-  /**
-   * Rerun a job that previously failed.
-   * @param int $jobId   ID of job to rerun
-   * @return int         ID of new job
-   * @throws \Exception
-   */
-  public function rerun(int $jobId)
-  {
-    $data = $this->getJob($jobId);
-
-    if (!$data) {
-      throw new \Exception("Job #$jobId not found. Cannot rerun.");
-    }
-
-    return $this->push($data['meta']['queue'], $data['meta']['jobName'], $data['job'], $data);
   }
 
   protected function getDatetime(): string

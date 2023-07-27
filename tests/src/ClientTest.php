@@ -2,8 +2,6 @@
 
 namespace PhpRedisQueue;
 
-use PhpRedisQueue\Client;
-
 class ClientTest extends Base
 {
   /**
@@ -23,6 +21,50 @@ class ClientTest extends Base
     $id = $client->push('queuename', 'customjob');
     $this->assertEquals($this->getJobData(id: 2, jobName: 'customjob'), $this->predis->lindex('php-redis-queue:client:queuename', 1));
     $this->assertEquals($this->getJobData(encode: false, status: 'pending', id: 2, jobName: 'customjob'), $client->getJob(2));
+  }
+
+  /**
+   * Ensure new jobs are pushed to the back of the queue
+   * @return void
+   */
+  public function testPush__newJobsGoToBack()
+  {
+    $client = new ClientMock($this->predis);
+
+    $client->push('queuename', 'customjob', ['first job']);
+    $client->push('queuename', 'customjob', ['second job']);
+
+    $this->assertEquals($this->getJobData(
+      id: 1,
+      jobName: 'customjob',
+      jobData: ['first job']
+    ), $this->predis->lindex('php-redis-queue:client:queuename', 0));
+
+    $this->assertEquals($this->getJobData(
+      id: 2,
+      jobName: 'customjob',
+      jobData: ['second job']
+    ), $this->predis->lindex('php-redis-queue:client:queuename', 1));
+  }
+
+  public function testPushToFront()
+  {
+    $client = new ClientMock($this->predis);
+
+    $client->pushToFront('queuename', 'customjob', ['first job']);
+    $client->pushToFront('queuename', 'customjob', ['second job']);
+
+    $this->assertEquals($this->getJobData(
+      id: 2,
+      jobName: 'customjob',
+      jobData: ['second job']
+    ), $this->predis->lindex('php-redis-queue:client:queuename', 0));
+
+    $this->assertEquals($this->getJobData(
+      id: 1,
+      jobName: 'customjob',
+      jobData: ['first job']
+    ), $this->predis->lindex('php-redis-queue:client:queuename', 1));
   }
 
   public function testRerun()
