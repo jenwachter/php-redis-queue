@@ -15,6 +15,7 @@
     }
   },
   "require": {
+    "php": ">=8.0",
     "predis/predis": "^2.1",
     "psr/log": "^1.0"
   }
