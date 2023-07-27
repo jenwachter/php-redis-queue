@@ -2,13 +2,11 @@
 
 namespace PhpRedisQueue;
 
-use PhpRedisQueue\traits\UsesQueues;
+use PhpRedisQueue\models\Job;
 use Psr\Log\LoggerInterface;
 
 class Client
 {
-  use UsesQueues;
-
   protected $defaultConfig = [
     'logger' => null, // instance of Psr\Log\LoggerInterface
   ];
@@ -33,18 +31,16 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @param array $original If this is a rerun of a job, this is data associated with the original job
    * @return integer ID of job
    */
-  public function push(string $queue, string $jobName = 'default', array $jobData = [], array $original = []): int
+  public function push(string $queue, string $jobName = 'default', array $jobData = []): int
   {
-    $data = $this->compileJobData($queue, $jobName, $jobData, $original);
+    $job = $this->createJob($queue, $jobName, $jobData);
+    $job->withMeta('status', 'pending')->save();
 
-    $this->redis->rpush('php-redis-queue:client:' . $queue, json_encode($data));
+    $this->addToQueue($queue, $job);
 
-    $this->saveJobWith($data, 'status', 'pending');
-
-    return $data['meta']['id'];
+    return $job->id();
   }
 
   /**
@@ -52,18 +48,16 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @param array $original If this is a rerun of a job, this is data associated with the original job
    * @return integer ID of job
    */
-  public function pushToFront(string $queue, string $jobName = 'default', array $jobData = [], array $original = []): int
+  public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int
   {
-    $data = $this->compileJobData($queue, $jobName, $jobData, $original);
+    $job = $this->createJob($queue, $jobName, $jobData);
+    $job->withMeta('status', 'pending')->save();
 
-    $this->redis->lpush('php-redis-queue:client:' . $queue, json_encode($data));
+    $this->addToQueue($queue, $job, true);
 
-    $this->saveJobWith($data, 'status', 'pending');
-
-    return $data['meta']['id'];
+    return $job->id();
   }
 
    /**
@@ -76,37 +70,33 @@ class Client
     */
   public function rerun(int $jobId, bool $front = false)
   {
-    $data = $this->getJob($jobId);
+    $job = new Job($this->redis, $jobId);
 
-    if (!$data) {
+    if (!$job->get()) {
       throw new \Exception("Job #$jobId not found. Cannot rerun.");
     }
 
-    $method = $front ? 'pushToFront' : 'push';
+    if ($job->status() !== 'failed') {
+      throw new \Exception("Job #$jobId did not fail. Cannot rerun.");
+    }
 
-    return $this->$method($data['meta']['queue'], $data['meta']['jobName'], $data['job'], $data);
+    $job->withRerun()->save();
+
+    // remove from failed list
+    $this->redis->lrem('php-redis-queue:client:'. $job->queue() .':failed', -1, $job->id());
+
+    $this->addToQueue($job->queue(), $job, $front);
   }
 
-  protected function compileJobData(string $queue, string $jobName = 'default', array $jobData = [], array $original = []): array
+  protected function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
   {
-    $id = $this->redis->incr('php-redis-queue:meta:id');
-
-    return [
-      'meta' => [
-        'jobName' => $jobName,
-        'queue' => $queue, // used to debug processing and procecssed queues
-        'id' => $id,
-        'datetime' => $this->getDatetime(),
-        'original' => $original,
-      ],
-      'job' => $jobData
-    ];
+    return new Job($this->redis, $queue, $jobName, $jobData);
   }
 
-  protected function getDatetime(): string
+  protected function addToQueue(string $queue, Job $job, bool $front = false)
   {
-    $now = new \DateTime('now', new \DateTimeZone('America/New_York'));
-    return $now->format('Y-m-d\TH:i:s');
+    $method = $front ? 'lpush' : 'rpush';
+    $this->redis->$method('php-redis-queue:client:' . $queue, $job->id());
   }
 
   protected function log(string $level, string $message, array $data = [])

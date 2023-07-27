@@ -2,13 +2,11 @@
 
 namespace PhpRedisQueue;
 
-use PhpRedisQueue\traits\UsesQueues;
+use PhpRedisQueue\models\Job;
 use Psr\Log\LoggerInterface;
 
 class QueueWorker
 {
-  use UsesQueues;
-
   /**
    * Default configuration that is merged with configuration passed in constructor
    * @var array
@@ -106,36 +104,39 @@ class QueueWorker
     */
   public function work(bool $block = true)
   {
-    if ($block && $this->default_socket_timeout !== null) {
-      ini_set('default_socket_timeout', $this->default_socket_timeout);
+    if ($block && $this->config['default_socket_timeout'] !== null) {
+      ini_set('default_socket_timeout', $this->config['default_socket_timeout']);
     }
 
-    while($jsonData = $this->checkQueue($block)) {
+    while($id = $this->checkQueue($block)) {
 
-      $this->redis->lpush($this->processing, $jsonData);
+      $id = is_array($id) ?
+        $id[1] : // blpop
+        $id;     // lpop
 
-      $data = json_decode($jsonData, true);
+      $job = new Job($this->redis, (int) $id);
+      $job->withMeta('status', 'processing')->save();
 
-      $this->saveJobWith($data, 'status', 'processing');
+      $this->redis->lpush($this->processing, $id);
 
-      $jobName = $data['meta']['jobName'];
+      $jobName = $job->jobName();
 
       if (!isset($this->callbacks[$jobName])) {
         $message = "No callback set for `$jobName` job in $this->queueName queue.";
-        $this->log('warning', $message, ['context' => $data]);
-        $this->onJobCompletion($data, 'failed', $message);
+        $this->log('warning', $message, ['context' => $job->get()]);
+        $this->onJobCompletion($job, 'failed', $message);
         continue;
       }
 
-      $this->hook($jobName . '_before', $data);
+      $this->hook($jobName . '_before', $job->get());
 
       try {
-        $context = call_user_func($this->callbacks[$jobName], $data['job']);
-        $this->onJobCompletion($data, 'success', $context);
+        $context = call_user_func($this->callbacks[$jobName], $job->jobData());
+        $this->onJobCompletion($job, 'success', $context);
       } catch (\Throwable $e) {
         $context = $this->getExceptionData($e);
-        $this->log('warning', 'Queue job failed', ['data' => $data]);
-        $this->onJobCompletion($data, 'failed', $context);
+        $this->log('warning', 'Queue job failed', ['data' => $job->get()]);
+        $this->onJobCompletion($job, 'failed', $context);
       }
 
       sleep($this->config['wait']);
@@ -165,26 +166,26 @@ class QueueWorker
     return $this->redis->lpop($this->pending);
   }
 
-  protected function onJobCompletion(array $job, string $status, $context = null)
+  protected function onJobCompletion(Job $job, string $status, $context = null)
   {
     $this->removeFromProcessing($job);
-    $this->moveToStatusQueue($job['meta']['id'], $status === 'success');
+    $this->moveToStatusQueue($job, $status === 'success');
 
-    $job = $this->saveJobWith($job, 'status', $status);
+    $job->withMeta('status', $status)->save();
 
     if ($context) {
-      $job = $this->saveJobWith($job, 'context', $context);
+      $job->withMeta('context', $context)->save();
     }
 
-    $this->hook($job['meta']['jobName'] . '_after', $job, $status === 'success');
+    $this->hook($job->jobName() . '_after', $job->get(), $status === 'success');
 
-    if ($status === 'success' && $job['meta']['original']) {
-      // remove the old job from the failed queue
-      $this->redis->lrem($this->failed, -1, json_encode($job['meta']['original']['meta']['id']));
-
-      // remove the old job's data
-      $this->deleteJob($job['meta']['original']['meta']['id']);
-    }
+    // if ($status === 'success' && $job['meta']['original']) {
+    //   // remove the old job from the failed queue
+    //   $this->redis->lrem($this->failed, -1, json_encode($job['meta']['original']['meta']['id']));
+    //
+    //   // remove the old job's data
+    //   $this->deleteJob($job['meta']['original']['meta']['id']);
+    // }
   }
 
   /**
@@ -192,21 +193,21 @@ class QueueWorker
    * @param array $job Job data
    * @return int
    */
-  protected function removeFromProcessing(array $job): int
+  protected function removeFromProcessing(Job $job): int
   {
-    return $this->redis->lrem($this->processing, -1, json_encode($job));
+    return $this->redis->lrem($this->processing, -1, $job->id());
   }
 
   /**
    * Move a job to a status queue (success or failed)
-   * @param int $id       Job ID
+   * @param Job $job      Job
    * @param bool $success Success (true) or failed (false)
    * @return void
    */
-  protected function moveToStatusQueue(int $id, bool $success)
+  protected function moveToStatusQueue(Job $job, bool $success)
   {
     $list = $success ? $this->success : $this->failed;
-    $this->redis->lpush($list, $id);
+    $this->redis->lpush($list, $job->id());
 
     $this->trimList($list);
   }

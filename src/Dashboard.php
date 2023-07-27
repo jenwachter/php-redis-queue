@@ -49,7 +49,7 @@ class Dashboard
         return $this->renderTemplate($response,'screens/queue', [
           'queues' => [
             'Pending' => $mapper->get($queueName),
-            // 'Processing' => $mapper->get($queueName .':processing'),
+            'Processing' => $mapper->get($queueName .':processing'),
             'Success' => $mapper->get($queueName .':success'),
             'Failed' => $mapper->get($queueName .':failed'),
           ],

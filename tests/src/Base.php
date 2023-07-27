@@ -2,6 +2,8 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\models\Job;
+
 abstract class Base extends \PHPUnit\Framework\TestCase
 {
   /**
@@ -33,39 +35,48 @@ abstract class Base extends \PHPUnit\Framework\TestCase
     }
   }
 
+  protected function getJobById($id)
+  {
+    $job = new Job(new \Predis\Client(),$id);
+    return $job->get();
+  }
+
   protected function getJobData(
     $id = 1,
     $jobName = 'default',
     $jobData = [],
-    $originalJobData = [],
+    $runs = [],
     $context = null,
-    $status = null,
+    $status = 'pending',
     $encode = true
   )
   {
-    $job = [
+    $data = [
       'meta' => [
-        'jobName' => $jobName,
-        'queue' => 'queuename',
         'id' => $id,
-        'datetime' => '2023-01-01T10:00:00',
-        'original' => $originalJobData,
+        'datetime' => $this->getDatetime(),
+        'queue' => 'queuename',
+        'jobName' => $jobName,
+        'status' => $status,
+        // 'original' => $originalJobData,
       ],
       'job' => $jobData,
     ];
 
-    if ($status) {
-      $job['meta']['status'] = $status;
-    }
-
     if ($context) {
-      $job['meta']['context'] = $context;
+      $data['meta']['context'] = $context;
     }
 
-    if ($encode) {
-      return json_encode($job);
+    if ($runs) {
+      $data['runs'] = $runs;
     }
 
-    return $job;
+    return $encode ? json_encode($data) : $data;
+  }
+
+  protected function getDatetime(): string
+  {
+    $now = new \DateTime('now', new \DateTimeZone('America/New_York'));
+    return $now->format('Y-m-d\TH:i:s');
   }
 }

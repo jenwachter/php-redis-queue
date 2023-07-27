@@ -2,15 +2,16 @@
 
 namespace PhpRedisQueue\dashboard\models;
 
-class Job
+class Job extends Base
 {
+  public $meta;
+  public $runs;
+  public $job;
+
   public function __construct(string $data)
   {
-    $this->data = json_decode($data);
-  }
+    $data = json_decode($data);
 
-  // public function get()
-  // {
-  //   return $this->data;
-  // }
+    parent::__construct($data);
+  }
 }

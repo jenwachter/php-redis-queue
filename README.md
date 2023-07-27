@@ -106,6 +106,7 @@ $client->push('files', 'upload', $data);
 $predis = new Predis\Client();
 $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename');
 ```
+_Note: queuename cannot be an integer._
 
 #### Configuration
 
