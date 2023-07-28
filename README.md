@@ -123,7 +123,8 @@ $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename', [
 
 * __default_socket_timeout__: timeout (in seconds) for worker, if using the defualt blocking functionality. Default: -1 (no timeout)
 * __logger__: a logger that implements `Psr\Log\LoggerInterface`. Default: null
-* __processedListsLimit__: limits the number of items in the failed and success lists. Pass -1 for no limit. Default: 5000
+* __failedListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 5000
+* __successListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 1000
 * __wait__: number of seconds to wait inbetween job processing. Default: 1
 
 ### Methods

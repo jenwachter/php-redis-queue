@@ -312,16 +312,16 @@ class QueueWorkerTest extends Base
   //   $this->assertEmpty($this->predis->lindex('php-redis-queue:client:jobs:15', 0));
   // }
 
-  public function testWork__trimProcessedLists()
+  public function testWork__trimSucessLists()
   {
     $worker = new QueueWorker($this->predis, 'queuename', [
-      'processedListsLimit' => 4,
+      'successListLimit' => 4,
       'wait' => 0
     ]);
 
     $client = new ClientMock($this->predis);
 
-    // add callbackj
+    // add callback
     $worker->addCallback('default', function () {});
 
     // put some stuff in the queue
@@ -356,6 +356,72 @@ class QueueWorkerTest extends Base
     // all jobs have their data saved
     foreach (range(2, 5) as $id) {
       $this->assertEquals($this->getJobData(id: $id, status: 'success'), $this->predis->get("php-redis-queue:jobs:$id"));
+    }
+
+    // first job has been booted from the queue
+    $this->assertEmpty($this->predis->get('php-redis-queue:jobs:1'));
+  }
+
+  public function testWork__trimFailedLists()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', [
+      'failedListLimit' => 4,
+      'wait' => 0
+    ]);
+
+    $client = new ClientMock($this->predis);
+
+    // add callback
+    $worker->addCallback('default', function () { throw new \Exception('Failed job'); });
+
+    // put some stuff in the queue
+    $client->push('queuename');
+    $client->push('queuename');
+    $client->push('queuename');
+    $client->push('queuename');
+
+    // job is in the pending queue
+    $this->assertEquals(4, $this->predis->llen('php-redis-queue:client:queuename'));
+
+    // set the worker to work
+    $worker->work(false);
+
+    // 4 jobs in the failed queue
+    $this->assertEquals(4, $this->predis->llen('php-redis-queue:client:queuename:failed'));
+
+    // all jobs have their data saved
+    foreach (range(1, 4) as $id) {
+      $this->assertEquals($this->getJobData(
+        id: $id,
+        status: 'failed',
+        context: [
+          'exception_type' => 'Exception',
+          'exception_code' => 0,
+          'exception_message' => 'Failed job'
+        ]
+      ), $this->predis->get("php-redis-queue:jobs:$id"));
+    }
+
+    // add another job
+    $client->push('queuename');
+
+    // work again
+    $worker->work(false);
+
+    // still only 4 in the failed
+    $this->assertEquals(4, $this->predis->llen('php-redis-queue:client:queuename:failed'));
+
+    // all jobs have their data saved
+    foreach (range(2, 5) as $id) {
+      $this->assertEquals($this->getJobData(
+        id: $id,
+        status: 'failed',
+        context: [
+          'exception_type' => 'Exception',
+          'exception_code' => 0,
+          'exception_message' => 'Failed job'
+        ]
+      ), $this->predis->get("php-redis-queue:jobs:$id"));
     }
 
     // first job has been booted from the queue
