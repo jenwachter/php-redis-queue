@@ -127,4 +127,27 @@ class ClientTest extends Base
 
     $client->rerun(10);
   }
+
+  public function testRemove(): void
+  {
+    $client = new ClientMock($this->predis);
+
+    // push some jobs to the queue
+    $client->push('queuename', 'customjob');
+    $client->push('queuename', 'customjob');
+    $client->push('queuename', 'customjob');
+    $client->push('queuename', 'customjob');
+
+    $this->assertEquals([1, 2, 3, 4], $this->predis->lrange('php-redis-queue:client:queuename', 0, -1));
+
+    $this->assertTrue($client->remove('queuename', 3));
+
+    $this->assertEquals([1, 2, 4], $this->predis->lrange('php-redis-queue:client:queuename', 0, -1));
+  }
+
+  public function testRemove__jobNotInQueue(): void
+  {
+    $client = new ClientMock($this->predis);
+    $this->assertFalse($client->remove('queuename', 10));
+  }
 }

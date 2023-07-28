@@ -88,6 +88,18 @@ class Client
     $this->addToQueue($job->queue(), $job, $front);
   }
 
+  /**
+   * Remove a job from a queue
+   * @param string $queue
+   * @param int $jobId
+   * @return bool
+   */
+  public function remove(string $queue, int $jobId): bool
+  {
+    $result = $this->redis->lrem($this->getFullQueueName($queue), -1, $jobId);
+    return $result === 1;
+  }
+
   protected function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
   {
     return new Job($this->redis, $queue, $jobName, $jobData);
@@ -96,7 +108,12 @@ class Client
   protected function addToQueue(string $queue, Job $job, bool $front = false)
   {
     $method = $front ? 'lpush' : 'rpush';
-    $this->redis->$method('php-redis-queue:client:' . $queue, $job->id());
+    $this->redis->$method($this->getFullQueueName($queue), $job->id());
+  }
+
+  protected function getFullQueueName(string $queue): string
+  {
+    return 'php-redis-queue:client:' . $queue;
   }
 
   protected function log(string $level, string $message, array $data = [])
