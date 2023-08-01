@@ -260,57 +260,57 @@ class QueueWorkerTest extends Base
    *  - job data is removed from the system (because it was successful)
    * @return void
    */
-  // public function testWork__reranJob()
-  // {
-  //   $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
-  //   $client = new ClientMock($this->predis);
-  //
-  //   // add original job to the system
-  //   $originalJob = $this->getJobData(encode: false, status: 'failed', id: 15, context: 'failure reason');
-  //   $this->predis->set('php-redis-queue:jobs:15', json_encode($originalJob));
-  //   $this->predis->lpush('php-redis-queue:client:queuename:failed', 15);
-  //
-  //   // increment the ID to that of the failed job
-  //   $this->predis->incrby('php-redis-queue:meta:id', 15);
-  //
-  //
-  //   // run the test
-  //
-  //   $mock = $this->getMockBuilder(\StdClass::class)
-  //     ->disableOriginalConstructor()
-  //     ->addMethods(['callback'])
-  //     ->getMock();
-  //
-  //   $mock->expects($this->exactly(1))
-  //     ->method('callback');
-  //
-  //   // add callback
-  //   $worker->addCallback('default', [$mock, 'callback']);
-  //
-  //   // rerun the job
-  //   $newId = $client->rerun(15);
-  //
-  //   // job is in the pending queue
-  //   $this->assertEquals($this->getJobData(id: $newId, originalJobData: $originalJob), $this->predis->lindex('php-redis-queue:client:queuename', 0));
-  //
-  //   // set the worker to work
-  //   $worker->work(false);
-  //
-  //   // processing queue is empty (job already processed)
-  //   $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
-  //
-  //   // job is in the success queue and its data is saved
-  //   $this->assertEquals($newId, $this->predis->lindex('php-redis-queue:client:queuename:success', 0));
-  //   $this->assertEquals($this->getJobData(
-  //     id: $newId,
-  //     originalJobData: $originalJob,
-  //     status: 'success'
-  //   ), $this->predis->get('php-redis-queue:jobs:16'));
-  //
-  //   // old job is removed ands its job record is also gone
-  //   $this->assertEmpty($this->predis->lindex('php-redis-queue:client:queuename:failed', 0));
-  //   $this->assertEmpty($this->predis->lindex('php-redis-queue:client:jobs:15', 0));
-  // }
+  public function testWork__rerunJob()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $client = new ClientMock($this->predis);
+
+    // add original job to the system
+    $originalJob = $this->getJobData(encode: false, status: 'failed', id: 15, context: 'failure reason');
+    $this->predis->set('php-redis-queue:jobs:15', json_encode($originalJob));
+    $this->predis->lpush('php-redis-queue:client:queuename:failed', 15);
+
+    // increment the ID to that of the failed job
+    $this->predis->incrby('php-redis-queue:meta:id', 15);
+
+
+    // run the test
+
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['callback'])
+      ->getMock();
+
+    $mock->expects($this->exactly(1))
+      ->method('callback');
+
+    // add callback
+    $worker->addCallback('default', [$mock, 'callback']);
+
+    // rerun the job
+    $client->rerun(15);
+
+    // job is in the pending queue
+    $this->assertEquals(15, $this->predis->lindex('php-redis-queue:client:queuename', 0));
+
+    // set the worker to work
+    $worker->work(false);
+
+    // processing queue is empty (job already processed)
+    $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
+
+    // job is in the success queue and its data is saved
+    $this->assertEquals(15, $this->predis->lindex('php-redis-queue:client:queuename:success', 0));
+    $this->assertEquals($this->getJobData(
+      id: 15,
+      status: 'success',
+      runs: [$originalJob['meta']]
+    ), $this->predis->get('php-redis-queue:jobs:15'));
+
+    // old job is removed ands its job record is also gone
+    $this->assertEmpty($this->predis->lindex('php-redis-queue:client:queuename:failed', 0));
+    $this->assertEmpty($this->predis->lindex('php-redis-queue:client:jobs:15', 0));
+  }
 
   public function testWork__trimSucessLists()
   {
