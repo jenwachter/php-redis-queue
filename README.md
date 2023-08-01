@@ -121,11 +121,11 @@ $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename', [
 
 ##### Available options:
 
-* __default_socket_timeout__: timeout (in seconds) for worker, if using the defualt blocking functionality. Default: -1 (no timeout)
+* __default_socket_timeout__: timeout (in seconds) for worker, if using the default blocking functionality. Default: -1 (no timeout)
 * __logger__: a logger that implements `Psr\Log\LoggerInterface`. Default: null
 * __failedListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 5000
 * __successListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 1000
-* __wait__: number of seconds to wait inbetween job processing. Default: 1
+* __wait__: number of seconds to wait in between job processing. Default: 1
 
 ### Methods
 
@@ -140,7 +140,7 @@ Returns: Null.
 
 Arguments:
 
-* `$name`: Name of a hook that cooresponds to one of three stages of the job's processing. See above for format.
+* `$name`: Name of a hook that corresponds to one of three stages of the job's processing. See above for format.
 * `$callable`: Function to attach to the given hook. Arguments are as follows:
   * `jobName(array $data)`
     * `$data`: Array of data passed to the job by the client
