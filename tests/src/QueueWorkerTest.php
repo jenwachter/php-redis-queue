@@ -237,7 +237,7 @@ class QueueWorkerTest extends Base
     // job is in the failed queue
     $this->assertEquals(1, $this->predis->lindex('php-redis-queue:client:queuename:failed', 0));
 
-    // failed queue is empty
+    // success queue is empty
     $this->assertEmpty($this->predis->get('php-redis-queue:client:queuename:success'));
 
     // job data is saved
@@ -249,6 +249,45 @@ class QueueWorkerTest extends Base
         'exception_message' => 'Job failed'
       ]
     ), $this->predis->get('php-redis-queue:jobs:1'));
+  }
+
+  /**
+   * This test ensures:
+   *  - jobs stuck in the processig queue (after a system failure)
+   *    are added to the pending queue
+   * @return void
+   */
+  public function testWork__jobStuckInProcessing()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $client = new ClientMock($this->predis);
+
+    // add callback
+    $worker->addCallback('default', function () {});
+
+    // push some jobs into the pending queue
+    $client->push('queuename');
+    $client->push('queuename');
+
+    // push some jobs into the processing queue
+    $client->push('queuename:processing');
+    $client->push('queuename:processing');
+
+    // make sure jobs are in the right queues
+    $this->assertEquals(['1', '2'], $this->predis->lrange('php-redis-queue:client:queuename', 0, -1));
+    $this->assertEquals(['3', '4'], $this->predis->lrange('php-redis-queue:client:queuename:processing', 0, -1));
+
+    // set the worker to work
+    $worker->work(false);
+
+    // processing queue is empty (jobs already processed)
+    $this->assertEquals(0, $this->predis->llen('php-redis-queue:client:queuename:processing'));
+
+    // jobs are in the success queue (reverse order in which they ran)
+    $this->assertEquals(['2', '1', '4', '3'], $this->predis->lrange('php-redis-queue:client:queuename:success', 0, -1));
+
+    // failed queue is empty
+    $this->assertEmpty($this->predis->get('php-redis-queue:client:queuename:failed'));
   }
 
   /**
