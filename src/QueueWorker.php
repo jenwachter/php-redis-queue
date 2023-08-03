@@ -29,13 +29,13 @@ class QueueWorker
      * Length limit for failed job list
      * @var int
      */
-    'failedListLimit' => 5000,
+    'failedListLimit' => 500,
 
     /**
      * Length limit for success job list
      * @var int
      */
-    'successListLimit' => 1000,
+    'successListLimit' => 500,
 
     /**
      * Number of seconds to wait between jobs
