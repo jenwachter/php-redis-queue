@@ -31,20 +31,20 @@ When a client pushes a job into a queue, it waits in the queue until it reaches 
 
 1. Removes the job from the queue and adds it to a processing queue.
 1. Determines if there is an available callback for this job. If there isn't, the job is considered failed.
-1. Calls a _before_ callback for the job type, if available.
+1. Calls a _before_ callback for the job type, if defined.
 1. Calls the main callback for the job type.
     1. If the callback does not throw an exception, it is considered successful. If the callback throws an exception, it is considered failed.
     1. The job is removed from the processing queue and added to either the failed or success list.
-1. Calls an _after_ callback for the job type, if available.
+1. Calls an _after_ callback for the job type, if defined.
 1. Queue moves on to the next job or waits until another is added.
 
 ## Quick example
 
-In this quick example, we'll setup a worker that handles processing that needs to be done when uploading and deleting files. We'll then create a client to send jobs to the worker.
+In this quick example, we'll set up a worker that handles processing that needs to be done when uploading and deleting files. We'll then create a client to send jobs to the worker.
 
 ### Create a worker
 
-If using the default settings of the `work()` method (blocking), only one worker (queue) can be run in a single file; however a single worker can handle multiple types of jobs. For example, here we create the `files` worker that can handle processing that needs to be done when both a file is uploaded and deleted:
+If using the default settings of the `work()` method (blocking), only one worker (queue) can be run in a single file; however, a single worker can handle multiple types of jobs. For example, here we create the `files` worker that can handle processing that needs to be done when both a file is uploaded and deleted:
 
 _files.php_
 ```php
@@ -121,7 +121,7 @@ $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename', [
 
 ##### Available options:
 
-* __default_socket_timeout__: timeout (in seconds) for worker, if using the default blocking functionality. Default: -1 (no timeout)
+* __default_socket_timeout__: timeout (in seconds) for the worker, if using the default blocking functionality. Default: -1 (no timeout)
 * __logger__: a logger that implements `Psr\Log\LoggerInterface`. Default: null
 * __failedListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 5000
 * __successListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 1000
@@ -131,7 +131,7 @@ $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename', [
 
 #### __`addCallback(string $name, callable $callable)`__
 
-Attaches a callback to a job. You can attach up to three callbacks per job. The format of the callback names are as follows:
+Attaches a callback to a job. You can attach up to three callbacks per job. The format of the callback names is as follows:
 * `<jobName>`: runs the job
 * `<jobName>_before`: runs before the job begins
 * `<jobName>_after`: runs after the job is complete
@@ -140,7 +140,7 @@ Returns: Null.
 
 Arguments:
 
-* `$name`: Name of a hook that corresponds to one of three stages of the job's processing. See above for format.
+* `$name`: Name of a hook that corresponds to one of three stages of the job's processing. See above for the format.
 * `$callable`: Function to attach to the given hook. Arguments are as follows:
   * `jobName(array $data)`
     * `$data`: Array of data passed to the job by the client
