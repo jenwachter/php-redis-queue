@@ -1,0 +1,14 @@
+#!/usr/bin/env php
+<?php
+
+// find and include composer autoloader:
+// https://getcomposer.org/doc/articles/vendor-binaries.md#finding-the-composer-autoloader-from-a-binary
+
+$autoload = $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
+$loader = include $autoload;
+
+if (!$loader) {
+  throw new \Exception("Invalid autoloadfile. Tried $autoloadFile.");
+}
+
+require dirname(__DIR__) . '/src/cli/app.php';
