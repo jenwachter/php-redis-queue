@@ -3,10 +3,13 @@
 namespace PhpRedisQueue;
 
 use PhpRedisQueue\models\Job;
+use PhpRedisQueue\traits\CanLog;
 use Psr\Log\LoggerInterface;
 
 class Client
 {
+  use CanLog;
+
   protected $defaultConfig = [
     'logger' => null, // instance of Psr\Log\LoggerInterface
   ];
@@ -114,14 +117,5 @@ class Client
   protected function getFullQueueName(string $queue): string
   {
     return 'php-redis-queue:client:' . $queue;
-  }
-
-  protected function log(string $level, string $message, array $data = [])
-  {
-    if (!isset($this->config['logger'])) {
-      return;
-    }
-
-    $this->config['logger']->$level($message, $data);
   }
 }
