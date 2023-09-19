@@ -7,6 +7,12 @@ use PhpRedisQueue\QueueManager;
 class Queue
 {
   /**
+   * Queue name
+   * @var string
+   */
+  public string $name;
+
+  /**
    * Name of the list that contains jobs waiting to be worked on
    * @var string
    */
@@ -30,12 +36,15 @@ class Queue
    */
   public string $failed;
 
-  public function __construct(public string $name)
+  public function __construct(string $name)
   {
-    $this->pending = 'php-redis-queue:client:' . $this->name . ':pending';
+    $this->name = str_replace(':', '-', $name);
 
-    $this->processing = $this->pending . ':processing';
-    $this->success = $this->pending . ':success';
-    $this->failed = $this->pending . ':failed';
+    $base = 'php-redis-queue:client:' . $this->name;
+
+    $this->pending = $base . ':pending';
+    $this->processing = $base . ':processing';
+    $this->success = $base . ':success';
+    $this->failed = $base . ':failed';
   }
 }
