@@ -23,15 +23,15 @@ class QueuesListCommand extends Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
-    $activeQueues = $this->queueManager->getList();
+    $queues = $this->queueManager->getList();
 
-    if (empty($activeQueues)) {
+    if (empty($queues)) {
       $output->writeln('No queues found.');
     } else {
       $table = new Table($output);
       $table
-        ->setHeaders(['Queue name', 'Active workers', 'Pending jobs'])
-        ->setRows(array_map(fn ($row) => array_values($row), $this->queueManager->getList()));
+        ->setHeaders(['Queue name', 'Active workers', 'Pending jobs', 'Successful jobs', 'Failed jobs'])
+        ->setRows(array_map(fn ($row) => array_values($row), $queues));
 
       $table->render();
     }

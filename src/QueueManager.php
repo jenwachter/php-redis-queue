@@ -52,31 +52,52 @@ class QueueManager
     $activeQueues = $this->redis->hgetall($this->allQueues);
 
     foreach ($activeQueues as $queueName) {
-      if (isset($queues[$queueName])) {
-        $queues[$queueName]['count']++;
-      } else {
-        $queues[$queueName] = [
-          'name' => $queueName,
-          'count' => 1,
-          'pendingJobs' => 0,
-        ];
-      }
-    }
-
-    // get jobs on all pending queues (active queues or not)
-    $pending = $this->redis->keys('php-redis-queue:client:*:pending');
-    foreach ($pending as $keyName) {
-      $queueName = str_replace(['php-redis-queue:client:', ':pending'], '', $keyName);
-
-      if (isset($queues[$queueName])) {
-        $queues[$queueName]['pendingJobs'] = $this->redis->llen($keyName);
-      } else {
+      if (!isset($queues[$queueName])) {
         $queues[$queueName] = [
           'name' => $queueName,
           'count' => 0,
-          'pendingJobs' => $this->redis->llen($keyName),
+          'pending' => 0,
+          'success' => 0,
+          'failed' => 0,
         ];
       }
+
+      $queues[$queueName]['count']++;
+    }
+
+    // get jobs on all pending, failed, and success queues (active queues or not)
+    $queues = $this->addJobsFromQueue('pending', $queues);
+    $queues = $this->addJobsFromQueue('failed', $queues);
+    $queues = $this->addJobsFromQueue('success', $queues);
+
+    return $queues;
+  }
+
+  protected function addJobsFromQueue(string $which, array $queues)
+  {
+    $foundQueues = $this->redis->keys("php-redis-queue:client:*:$which");
+
+    foreach ($foundQueues as $keyName) {
+      preg_match("/php-redis-queue:client:([^:]+):$which/", $keyName, $match);
+
+      if (!isset($match[1])) {
+        var_dump("NO MATCH: " . $which);
+        continue;
+      }
+
+      $queueName = $match[1];
+
+      if (!isset($queues[$queueName])) {
+        $queues[$queueName] = [
+          'name' => $queueName,
+          'count' => 0,
+          'pending' => 0,
+          'success' => 0,
+          'failed' => 0,
+        ];
+      }
+
+      $queues[$queueName][$which] = $this->redis->llen($keyName);
     }
 
     return $queues;
