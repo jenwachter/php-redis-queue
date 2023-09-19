@@ -1,10 +1,21 @@
 <?php
 
-namespace PhpRedisQueueCli\cli;
+namespace PhpRedisQueue\cli;
 
-use PhpRedisQueueCli\commands\QueuesCommand;
+use config\helpers\CreateLogger;
 use Symfony\Component\Console\Application;
 
-$application = new Application();
+$app = new Application();
 
-$application->run();
+$redis = new \Predis\Client();
+
+$queueManager = new \PhpRedisQueue\QueueManager($redis);
+$jobManager = new \PhpRedisQueue\JobManager($redis);
+
+$app->add(new \PhpRedisQueue\cli\commands\QueuesListCommand($queueManager));
+$app->add(new \PhpRedisQueue\cli\commands\QueueFailedCommand($queueManager));
+$app->add(new \PhpRedisQueue\cli\commands\QueuePendingCommand($queueManager));
+$app->add(new \PhpRedisQueue\cli\commands\QueueSuccessCommand($queueManager));
+$app->add(new \PhpRedisQueue\cli\commands\JobInfoCommand($jobManager));
+
+$app->run();
