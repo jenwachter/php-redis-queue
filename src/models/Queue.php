@@ -32,7 +32,7 @@ class Queue
 
   public function __construct(public string $name)
   {
-    $this->pending = 'php-redis-queue:client:' . $this->name;
+    $this->pending = 'php-redis-queue:client:' . $this->name . ':pending';
 
     $this->processing = $this->pending . ':processing';
     $this->success = $this->pending . ':success';

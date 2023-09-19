@@ -63,12 +63,10 @@ class QueueManager
       }
     }
 
-
-    // get pending jobs
-
-    $pending = $this->redis->keys('php-redis-queue:client:*');
+    // get jobs on all pending queues (active queues or not)
+    $pending = $this->redis->keys('php-redis-queue:client:*:pending');
     foreach ($pending as $keyName) {
-      $queueName = str_replace('php-redis-queue:client:', '', $keyName);
+      $queueName = str_replace(['php-redis-queue:client:', ':pending'], '', $keyName);
 
       if (isset($queues[$queueName])) {
         $queues[$queueName]['pendingJobs'] = $this->redis->llen($keyName);
