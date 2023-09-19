@@ -10,6 +10,8 @@ class Client
 {
   use CanLog;
 
+  protected JobManager $jobManager;
+
   protected $defaultConfig = [
     'logger' => null, // instance of Psr\Log\LoggerInterface
   ];
@@ -22,6 +24,8 @@ class Client
    */
   public function __construct(protected \Predis\Client $redis, array $config = [])
   {
+    $this->jobManager = new JobManager($redis, $config);
+
     $this->config = array_merge($this->defaultConfig, $config);
 
     if (isset($this->config['logger']) && !$this->config['logger'] instanceof \Psr\Log\LoggerInterface) {
@@ -38,10 +42,10 @@ class Client
    */
   public function push(string $queue, string $jobName = 'default', array $jobData = []): int
   {
-    $job = $this->createJob($queue, $jobName, $jobData);
+    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
     $job->withMeta('status', 'pending')->save();
 
-    $this->addToQueue($queue, $job);
+    $this->jobManager->addJobToQueue($queue, $job);
 
     return $job->id();
   }
@@ -55,10 +59,10 @@ class Client
    */
   public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int
   {
-    $job = $this->createJob($queue, $jobName, $jobData);
+    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
     $job->withMeta('status', 'pending')->save();
 
-    $this->addToQueue($queue, $job, true);
+    $this->jobManager->addJobToQueue($queue, $job, true);
 
     return $job->id();
   }
@@ -73,22 +77,7 @@ class Client
     */
   public function rerun(int $jobId, bool $front = false)
   {
-    $job = new Job($this->redis, $jobId);
-
-    if (!$job->get()) {
-      throw new \Exception("Job #$jobId not found. Cannot rerun.");
-    }
-
-    if ($job->status() !== 'failed') {
-      throw new \Exception("Job #$jobId did not fail. Cannot rerun.");
-    }
-
-    $job->withRerun()->save();
-
-    // remove from failed list
-    $this->redis->lrem('php-redis-queue:client:'. $job->queue() .':failed', -1, $job->id());
-
-    $this->addToQueue($job->queue(), $job, $front);
+    $this->jobManager->rerun($jobId, $front);
   }
 
   /**
@@ -99,23 +88,6 @@ class Client
    */
   public function remove(string $queue, int $jobId): bool
   {
-    $result = $this->redis->lrem($this->getFullQueueName($queue), -1, $jobId);
-    return $result === 1;
-  }
-
-  protected function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
-  {
-    return new Job($this->redis, $queue, $jobName, $jobData);
-  }
-
-  protected function addToQueue(string $queue, Job $job, bool $front = false)
-  {
-    $method = $front ? 'lpush' : 'rpush';
-    $this->redis->$method($this->getFullQueueName($queue), $job->id());
-  }
-
-  protected function getFullQueueName(string $queue): string
-  {
-    return 'php-redis-queue:client:' . $queue;
+    return $this->jobManager->removeJobFromQueue($queue, $jobId);
   }
 }
