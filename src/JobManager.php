@@ -104,8 +104,10 @@ class JobManager
 
     $job->withRerun()->save();
 
+    $queue = new Queue($job->queue());
+
     // remove from failed list
-    $this->redis->lrem('php-redis-queue:client:'. $job->queue() .':failed', -1, $job->id());
+    $this->redis->lrem($queue->failed, -1, $job->id());
 
     $this->addJobToQueue($job->queue(), $job, $front);
   }
