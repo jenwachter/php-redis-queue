@@ -42,12 +42,14 @@ class JobInfoCommand extends Command
       $output->writeln("");
       $output->writeln('Attached data:');
 
-      $table = new Table($output);
-      $table->setHeaders(['Key', 'Value'])
-        ->setRows([
-          ...(array_map(fn ($key, $value) => [$key, is_string($value) ? $value : json_encode($value)], array_keys($job['job']), $job['job']))
-        ]);
-      $table->render();
+      print_r($job['job']);
+
+      // $table = new Table($output);
+      // $table->setHeaders(['Key', 'Value'])
+      //   ->setRows([
+      //     ...(array_map(fn ($key, $value) => [$key, is_string($value) ? $value : json_encode($value)], array_keys($job['job']), $job['job']))
+      //   ]);
+      // $table->render();
     }
 
     return Command::SUCCESS;
