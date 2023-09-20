@@ -2,8 +2,16 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\models\Queue;
+
 class ClientTest extends Base
 {
+  public function setUp(): void
+  {
+    parent::setUp();
+    $this->queue = new Queue('queuename');
+  }
+
   /**
    * The correct metadata is added to each job
    * @return void
@@ -14,7 +22,7 @@ class ClientTest extends Base
 
     // default job
     $client->push('queuename');
-    $this->assertEquals('1', $this->predis->lindex('php-redis-queue:client:queuename', 0));
+    $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 0));
     $this->assertEquals($this->getJobData(
       encode: false,
       status: 'pending'
@@ -22,7 +30,7 @@ class ClientTest extends Base
 
     // custom job
     $id = $client->push('queuename', 'customjob');
-    $this->assertEquals('2', $this->predis->lindex('php-redis-queue:client:queuename', 1));
+    $this->assertEquals('2', $this->predis->lindex($this->queue->pending, 1));
     $this->assertEquals($this->getJobData(
       encode: false,
       status: 'pending',
@@ -42,7 +50,7 @@ class ClientTest extends Base
     $client->push('queuename', 'customjob', ['first job']);
     $client->push('queuename', 'customjob', ['second job']);
 
-    $this->assertEquals('1', $this->predis->lindex('php-redis-queue:client:queuename', 0));
+    $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 0));
     $this->assertEquals($this->getJobData(
       encode: false,
       jobName: 'customjob',
@@ -50,7 +58,7 @@ class ClientTest extends Base
       status: 'pending'
     ), $this->getJobById(1));
 
-    $this->assertEquals('2', $this->predis->lindex('php-redis-queue:client:queuename', 1));
+    $this->assertEquals('2', $this->predis->lindex($this->queue->pending, 1));
     $this->assertEquals($this->getJobData(
       encode: false,
       id: 2,
@@ -67,7 +75,7 @@ class ClientTest extends Base
     $client->pushToFront('queuename', 'customjob', ['first job']);
     $client->pushToFront('queuename', 'customjob', ['second job']);
 
-    $this->assertEquals('2', $this->predis->lindex('php-redis-queue:client:queuename', 0));
+    $this->assertEquals('2', $this->predis->lindex($this->queue->pending, 0));
     $this->assertEquals($this->getJobData(
       encode: false,
       id: 2,
@@ -76,7 +84,7 @@ class ClientTest extends Base
       status: 'pending'
     ), $this->getJobById(2));
 
-    $this->assertEquals('1', $this->predis->lindex('php-redis-queue:client:queuename', 1));
+    $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 1));
     $this->assertEquals($this->getJobData(
       encode: false,
       jobName: 'customjob',
@@ -98,7 +106,7 @@ class ClientTest extends Base
     );
 
     $this->predis->set('php-redis-queue:jobs:15', json_encode($originalJob));
-    $this->predis->lpush('php-redis-queue:client:queuename:failed', 15);
+    $this->predis->lpush($this->queue->failed, 15);
 
     // increment the ID to that of the failed job
     $this->predis->incrby('php-redis-queue:meta:id', 15);
@@ -106,7 +114,7 @@ class ClientTest extends Base
     $client->rerun(15);
 
     // back in the pending queue
-    $this->assertEquals('15', $this->predis->lindex('php-redis-queue:client:queuename', 0));
+    $this->assertEquals('15', $this->predis->lindex($this->queue->pending, 0));
     $this->assertEquals($this->getJobData(
       encode: false,
       status: 'pending',
@@ -115,7 +123,7 @@ class ClientTest extends Base
     ), $this->getJobById(15));
 
     // out of the failed list
-    $this->assertEmpty($this->predis->lindex('php-redis-queue:client:queuename:failed', 0));
+    $this->assertEmpty($this->predis->lindex($this->queue->failed, 0));
   }
 
   public function testRerun__missingJob(): void
@@ -138,11 +146,11 @@ class ClientTest extends Base
     $client->push('queuename', 'customjob');
     $client->push('queuename', 'customjob');
 
-    $this->assertEquals([1, 2, 3, 4], $this->predis->lrange('php-redis-queue:client:queuename', 0, -1));
+    $this->assertEquals([1, 2, 3, 4], $this->predis->lrange($this->queue->pending, 0, -1));
 
     $this->assertTrue($client->remove('queuename', 3));
 
-    $this->assertEquals([1, 2, 4], $this->predis->lrange('php-redis-queue:client:queuename', 0, -1));
+    $this->assertEquals([1, 2, 4], $this->predis->lrange($this->queue->pending, 0, -1));
   }
 
   public function testRemove__jobNotInQueue(): void

@@ -3,10 +3,18 @@
 namespace PhpRedisQueue;
 
 use PhpRedisQueue\models\Job;
+use PhpRedisQueue\models\Queue;
+use PhpRedisQueue\traits\CanLog;
 use Psr\Log\LoggerInterface;
 
 class QueueWorker
 {
+  use CanLog;
+
+  protected Queue $queue;
+
+  protected QueueManager $queueManager;
+
   /**
    * Default configuration that is merged with configuration passed in constructor
    * @var array
@@ -47,36 +55,6 @@ class QueueWorker
   protected $config = [];
 
   /**
-   * Name of queue passed by client
-   * @var string
-   */
-  protected string $queueName;
-
-  /**
-   * Name of the list that contains jobs waiting to be worked on
-   * @var string
-   */
-  protected string $pending;
-
-  /**
-   * Name of list that contains jobs currently being worked on
-   * @var string
-   */
-  protected string $processing;
-
-  /**
-   * Name of list that contains jobs that ran succesfully
-   * @var string
-   */
-  protected string $success;
-
-  /**
-   * Name of list that contains jobs that failed
-   * @var string
-   */
-  protected string $failed;
-
-  /**
    * Array of callbacks used when processing work
    * @var array
    */
@@ -84,17 +62,15 @@ class QueueWorker
 
   /**
    * @param \Predis\Client $redis
-   * @param string $queue
+   * @param string $queueName
    * @param array $config
    */
-  public function __construct(protected \Predis\Client $redis, string $queue, array $config = [])
+  public function __construct(protected \Predis\Client $redis, string $queueName, array $config = [])
   {
-    $this->queueName = $queue;
+    $this->queue = new Queue($queueName);
 
-    $this->pending = 'php-redis-queue:client:' . $queue;
-    $this->processing = $this->pending . ':processing';
-    $this->success = $this->pending . ':success';
-    $this->failed = $this->pending . ':failed';
+    $this->queueManager = new QueueManager($redis, $config);
+    $this->queueManager->registerQueue($this->queue);
 
     $this->config = array_merge($this->defaultConfig, $config);
 
@@ -114,8 +90,8 @@ class QueueWorker
       ini_set('default_socket_timeout', $this->config['default_socket_timeout']);
     }
 
-    while ($id = $this->redis->rpop($this->processing)) {
-      $this->redis->lpush($this->pending, $id);
+    while ($id = $this->redis->rpop($this->queue->processing)) {
+      $this->redis->lpush($this->queue->pending, $id);
     }
 
     while($id = $this->checkQueue($block)) {
@@ -127,12 +103,13 @@ class QueueWorker
       $job = new Job($this->redis, (int) $id);
       $job->withMeta('status', 'processing')->save();
 
-      $this->redis->lpush($this->processing, $id);
+      $this->redis->lpush($this->queue->processing, $id);
 
       $jobName = $job->jobName();
 
       if (!isset($this->callbacks[$jobName])) {
-        $message = "No callback set for `$jobName` job in $this->queueName queue.";
+        $queueName = $this->queue->name;
+        $message = "No callback set for `$jobName` job in $queueName queue.";
         $this->log('warning', $message, ['context' => $job->get()]);
         $this->onJobCompletion($job, 'failed', $message);
         continue;
@@ -170,10 +147,10 @@ class QueueWorker
   protected function checkQueue(bool $block = true)
   {
     if ($block) {
-      return $this->redis->blpop($this->pending, 0);
+      return $this->redis->blpop($this->queue->pending, 0);
     }
 
-    return $this->redis->lpop($this->pending);
+    return $this->redis->lpop($this->queue->pending);
   }
 
   protected function onJobCompletion(Job $job, string $status, $context = null)
@@ -205,7 +182,7 @@ class QueueWorker
    */
   protected function removeFromProcessing(Job $job): int
   {
-    return $this->redis->lrem($this->processing, -1, $job->id());
+    return $this->redis->lrem($this->queue->processing, -1, $job->id());
   }
 
   /**
@@ -216,7 +193,7 @@ class QueueWorker
    */
   protected function moveToStatusQueue(Job $job, bool $success)
   {
-    $list = $success ? $this->success : $this->failed;
+    $list = $success ? $this->queue->success : $this->queue->failed;
     $this->redis->lpush($list, $job->id());
 
     $this->trimList($list);
@@ -224,7 +201,7 @@ class QueueWorker
 
   protected function trimList(string $list)
   {
-    $limit = $list === $this->success ? 'successListLimit' : 'failedListLimit';
+    $limit = $list === $this->queue->success ? 'successListLimit' : 'failedListLimit';
     $limit = $this->config[$limit];
 
     if ($limit === -1) {
@@ -278,14 +255,5 @@ class QueueWorker
         ]
       ]);
     }
-  }
-
-  protected function log(string $level, string $message, array $data = [])
-  {
-    if (!isset($this->config['logger'])) {
-      return;
-    }
-
-    $this->config['logger']->$level($message, $data);
   }
 }
