@@ -22,7 +22,7 @@ class JobInfoCommand extends Command
   {
     $this
       ->setName('job:info')
-      ->setDescription('Get information on a given job')
+      ->setDescription('Get information on a specific job')
       ->addArgument('id', InputArgument::REQUIRED, 'The ID of the job');
   }
 

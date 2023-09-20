@@ -18,7 +18,7 @@ class QueuesListCommand extends Command
   {
     $this
       ->setName('queues:list')
-      ->setDescription('List active queues');
+      ->setDescription('List queues');
   }
 
   protected function execute(InputInterface $input, OutputInterface $output)
