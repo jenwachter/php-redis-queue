@@ -58,14 +58,17 @@ class JobManager
    * @param string $queueName
    * @param Job $job
    * @param bool $front
-   * @return void
+   * @return boolean       TRUE if job was successfully added to the queue
    */
-  public function addJobToQueue(string $queueName, Job $job, bool $front = false)
+  public function addJobToQueue(string $queueName, Job $job, bool $front = false): bool
   {
     $method = $front ? 'lpush' : 'rpush';
     $queue = new Queue($queueName);
 
-    $this->redis->$method($queue->pending, $job->id());
+    $length = $this->redis->llen($queue->pending);
+    $newLength = $this->redis->$method($queue->pending, $job->id());
+
+    return $newLength === ++$length;
   }
 
   /**
@@ -87,10 +90,10 @@ class JobManager
    * @param int $jobId     ID of job to rerun
    * @return int           ID of new job
    * @param boolean $front Push the new job to the front of the queue?
-   * @return int           ID of new job
+   * @return boolean       TRUE if job was successfully added to the queue
    * @throws \Exception
    */
-  public function rerun(int $jobId, bool $front = false)
+  public function rerun(int $jobId, bool $front = false): bool
   {
     $job = new Job($this->redis, $jobId);
 
@@ -109,6 +112,6 @@ class JobManager
     // remove from failed list
     $this->redis->lrem($queue->failed, -1, $job->id());
 
-    $this->addJobToQueue($job->queue(), $job, $front);
+    return $this->addJobToQueue($job->queue(), $job, $front);
   }
 }

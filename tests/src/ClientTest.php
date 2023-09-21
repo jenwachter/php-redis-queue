@@ -21,7 +21,9 @@ class ClientTest extends Base
     $client = new ClientMock($this->predis);
 
     // default job
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(1, $id);
+
     $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 0));
     $this->assertEquals($this->getJobData(
       encode: false,
@@ -30,6 +32,8 @@ class ClientTest extends Base
 
     // custom job
     $id = $client->push('queuename', 'customjob');
+    $this->assertEquals(2, $id);
+
     $this->assertEquals('2', $this->predis->lindex($this->queue->pending, 1));
     $this->assertEquals($this->getJobData(
       encode: false,
@@ -47,8 +51,11 @@ class ClientTest extends Base
   {
     $client = new ClientMock($this->predis);
 
-    $client->push('queuename', 'customjob', ['first job']);
-    $client->push('queuename', 'customjob', ['second job']);
+    $id = $client->push('queuename', 'customjob', ['first job']);
+    $this->assertEquals(1, $id);
+
+    $id = $client->push('queuename', 'customjob', ['second job']);
+    $this->assertEquals(2, $id);
 
     $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 0));
     $this->assertEquals($this->getJobData(
@@ -72,8 +79,11 @@ class ClientTest extends Base
   {
     $client = new ClientMock($this->predis);
 
-    $client->pushToFront('queuename', 'customjob', ['first job']);
-    $client->pushToFront('queuename', 'customjob', ['second job']);
+    $id = $client->pushToFront('queuename', 'customjob', ['first job']);
+    $this->assertEquals(1, $id);
+
+    $id = $client->pushToFront('queuename', 'customjob', ['second job']);
+    $this->assertEquals(2, $id);
 
     $this->assertEquals('2', $this->predis->lindex($this->queue->pending, 0));
     $this->assertEquals($this->getJobData(
@@ -141,10 +151,17 @@ class ClientTest extends Base
     $client = new ClientMock($this->predis);
 
     // push some jobs to the queue
-    $client->push('queuename', 'customjob');
-    $client->push('queuename', 'customjob');
-    $client->push('queuename', 'customjob');
-    $client->push('queuename', 'customjob');
+    $id = $client->push('queuename', 'customjob');
+    $this->assertEquals(1, $id);
+
+    $id = $client->push('queuename', 'customjob');
+    $this->assertEquals(2, $id);
+
+    $id = $client->push('queuename', 'customjob');
+    $this->assertEquals(3, $id);
+
+    $id = $client->push('queuename', 'customjob');
+    $this->assertEquals(4, $id);
 
     $this->assertEquals([1, 2, 3, 4], $this->predis->lrange($this->queue->pending, 0, -1));
 
