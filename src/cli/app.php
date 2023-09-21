@@ -9,13 +9,14 @@ $app = new Application();
 
 $redis = new \Predis\Client();
 
-$queueManager = new \PhpRedisQueue\QueueManager($redis);
 $jobManager = new \PhpRedisQueue\JobManager($redis);
+$queueManager = new \PhpRedisQueue\QueueManager($redis);
 
-$app->add(new \PhpRedisQueue\cli\commands\QueuesListCommand($queueManager));
-$app->add(new \PhpRedisQueue\cli\commands\QueueFailedCommand($queueManager));
-$app->add(new \PhpRedisQueue\cli\commands\QueuePendingCommand($queueManager));
-$app->add(new \PhpRedisQueue\cli\commands\QueueSuccessCommand($queueManager));
-$app->add(new \PhpRedisQueue\cli\commands\JobInfoCommand($jobManager));
+// list commands
+$app->add(new \PhpRedisQueue\cli\commands\ListCommands\JobsCommand($queueManager));
+$app->add(new \PhpRedisQueue\cli\commands\ListCommands\QueuesCommand($queueManager));
+
+// job commands
+$app->add(new \PhpRedisQueue\cli\commands\JobCommands\InfoCommand($jobManager));
 
 $app->run();
