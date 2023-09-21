@@ -74,7 +74,8 @@ class Job
       $this->data['runs'] = [];
     }
 
-    $this->data['runs'][] = $this->data['meta'];
+    // add latest run to the front of the array
+    array_unshift($this->data['runs'], $this->data['meta']);
 
     // update datetime
     $this->data['meta']['datetime'] = $this->getDatetime();
