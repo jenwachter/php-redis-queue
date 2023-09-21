@@ -18,5 +18,6 @@ $app->add(new \PhpRedisQueue\cli\commands\ListCommands\QueuesCommand($queueManag
 
 // job commands
 $app->add(new \PhpRedisQueue\cli\commands\JobCommands\InfoCommand($jobManager));
+$app->add(new \PhpRedisQueue\cli\commands\JobCommands\RerunCommand($jobManager, $queueManager));
 
 $app->run();
