@@ -19,6 +19,7 @@ class QueueWorkerTest extends Base
 
     // put something in the queue
     $id = $client->push('queuename');
+    $this->assertEquals(1, $id);
 
     // set the worker to work
     $worker->work(false);
@@ -69,8 +70,11 @@ class QueueWorkerTest extends Base
     $worker->addCallback('default_after', [$mock, 'callback_after']);
 
     // put stuff in the queue
-    $client->push('queuename');
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(1, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(2, $id);
 
     // jobs are in the pending queue
     $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 0));
@@ -156,7 +160,8 @@ class QueueWorkerTest extends Base
     $worker->addCallback('jobname_after', [$mock, 'callback_after']);
 
     // put something in the queue
-    $client->push('queuename', 'jobname', ['jobdata' => 'some data']);
+    $id = $client->push('queuename', 'jobname', ['jobdata' => 'some data']);
+    $this->assertEquals(1, $id);
 
     // job is in the pending queue
     $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 0));
@@ -227,7 +232,8 @@ class QueueWorkerTest extends Base
     $worker->addCallback('default_after', [$mock, 'callback_after']);
 
     // put something in the queue
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(1, $id);
 
     // job is in the pending queue
     $this->assertEquals('1', $this->predis->lindex($this->queue->pending, 0));
@@ -274,15 +280,20 @@ class QueueWorkerTest extends Base
     $worker->addCallback('default', function () {});
 
     // push some jobs into the pending queue
-    $client->push('queuename');
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(1, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(2, $id);
 
     // push some jobs into the processing queue
     $id = $client->push('queuename');
+    $this->assertEquals(3, $id);
     $this->predis->rpush($this->queue->processing, $id); // push into processing
     $this->predis->lrem($this->queue->pending, -1, $id); // remove from pending
 
     $id = $client->push('queuename');
+    $this->assertEquals(4, $id);
     $this->predis->rpush($this->queue->processing, $id); // push into processing
     $this->predis->lrem($this->queue->pending, -1, $id); // remove from pending
 
@@ -377,10 +388,17 @@ class QueueWorkerTest extends Base
     $worker->addCallback('default', function () {});
 
     // put some stuff in the queue
-    $client->push('queuename');
-    $client->push('queuename');
-    $client->push('queuename');
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(1, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(2, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(3, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(4, $id);
 
     // job is in the pending queue
     $this->assertEquals(4, $this->predis->llen($this->queue->pending));
@@ -397,7 +415,8 @@ class QueueWorkerTest extends Base
     }
 
     // add another job
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(5, $id);
 
     // work again
     $worker->work(false);
@@ -427,10 +446,17 @@ class QueueWorkerTest extends Base
     $worker->addCallback('default', function () { throw new \Exception('Failed job'); });
 
     // put some stuff in the queue
-    $client->push('queuename');
-    $client->push('queuename');
-    $client->push('queuename');
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(1, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(2, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(3, $id);
+
+    $id = $client->push('queuename');
+    $this->assertEquals(4, $id);
 
     // job is in the pending queue
     $this->assertEquals(4, $this->predis->llen($this->queue->pending));
@@ -455,7 +481,8 @@ class QueueWorkerTest extends Base
     }
 
     // add another job
-    $client->push('queuename');
+    $id = $client->push('queuename');
+    $this->assertEquals(5, $id);
 
     // work again
     $worker->work(false);

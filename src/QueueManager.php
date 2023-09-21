@@ -38,9 +38,14 @@ class QueueManager
     }
   }
 
+  public function getActiveQueues()
+  {
+    return $this->redis->hgetall($this->allQueues);
+  }
+
   /**
-   * Get a list of active queues and how many workers are
-   * available per queue.
+   * Get a list of all (active or not) queues, how many workers are available
+   * per queue, and number of pending, failed, and successful jobs.
    * @return array
    */
   public function getList()
@@ -49,7 +54,7 @@ class QueueManager
 
     // active queues (with or without pending jobs)
     $queues = [];
-    $activeQueues = $this->redis->hgetall($this->allQueues);
+    $activeQueues = $this->getActiveQueues();
 
     foreach ($activeQueues as $queueName) {
       if (!isset($queues[$queueName])) {

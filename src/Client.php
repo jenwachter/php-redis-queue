@@ -38,16 +38,18 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @return integer ID of job
+   * @return integer|false ID of job or FALSE on failure
    */
   public function push(string $queue, string $jobName = 'default', array $jobData = []): int
   {
     $job = $this->jobManager->createJob($queue, $jobName, $jobData);
     $job->withMeta('status', 'pending')->save();
+    
+    if ($this->jobManager->addJobToQueue($queue, $job)) {
+      return $job->id();
+    }
 
-    $this->jobManager->addJobToQueue($queue, $job);
-
-    return $job->id();
+    return false;
   }
 
   /**
@@ -55,16 +57,18 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @return integer ID of job
+   * @return integer|false ID of job or FALSE on failure
    */
   public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int
   {
     $job = $this->jobManager->createJob($queue, $jobName, $jobData);
     $job->withMeta('status', 'pending')->save();
 
-    $this->jobManager->addJobToQueue($queue, $job, true);
+    if ($this->jobManager->addJobToQueue($queue, $job, true)) {
+      return $job->id();
+    }
 
-    return $job->id();
+    return false;
   }
 
    /**
@@ -77,7 +81,7 @@ class Client
     */
   public function rerun(int $jobId, bool $front = false)
   {
-    $this->jobManager->rerun($jobId, $front);
+    return $this->jobManager->rerun($jobId, $front);
   }
 
   /**

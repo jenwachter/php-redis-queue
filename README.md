@@ -7,6 +7,9 @@ A simple background server queue utilizing Redis and PHP.
 * [How it works](#how-it-works)
 * [Quick example](#quick-example)
 * [Documentation](#documentation)
+  * [Worker](#worker)
+  * [Client](#client)
+  * [CLI](#cli)
 
 ## Requirements
 
@@ -36,7 +39,7 @@ When a client pushes a job into a queue, it waits in the queue until it reaches 
     1. If the callback does not throw an exception, it is considered successful. If the callback throws an exception, it is considered failed.
     1. The job is removed from the processing queue and added to either the failed or success list.
 1. Calls an _after_ callback for the job type, if defined.
-1. Queue moves on to the next job or waits until another is added.
+1. The queue moves on to the next job or waits until another is added.
 
 ## Quick example
 
@@ -232,3 +235,92 @@ Arguments:
 
 * `$id`: ID of failed job.
 
+
+### CLI
+
+Access the CLI tool by running:
+```bash
+./vendor/bin/prq
+```
+
+#### List commands
+
+##### __`prq list:queues`__
+
+Get information about all queues. Queues are discovered by looking up active workers and examining the lists of pending, successful, and failed jobs.
+
+Example output:
+
+```bash
+$ ./vendor/bin/prq list:queues
++-------------------+----------------+--------------+-----------------+-------------+
+| Queue name        | Active workers | Pending jobs | Successful jobs | Failed jobs |
++-------------------+----------------+--------------+-----------------+-------------+
+| files_queue       | 1              | 2            | 16              | 0           |
+| another_queue     | 0              | 10           | 3               | 2           |
++-------------------+----------------+--------------+-----------------+-------------+
+```
+
+##### __`prq list:jobs <queuename> <status>`__
+
+List jobs associated with the given queue.
+
+Arguments:
+
+* `queuename`: Name of the queue.
+* `status`: Job status. Options: pending, processing, success, or failed. Default: pending
+
+Example output:
+
+```bash
+$ ./vendor/bin/prq list:jobs files_queue
++----+----------------------+------------+
+| ID | Datetime initialized | Job name   |
++----+----------------------+------------+
+| 8  | 2023-09-21T10:38:34  | upload     |
+| 7  | 2023-09-21T10:37:45  | upload     |
+| 6  | 2023-09-21T10:36:02  | delete     |
+| 5  | 2023-09-21T10:35:53  | delete     |
+| 4  | 2023-09-21T10:35:09  | upload     |
+| 3  | 2023-09-21T10:34:21  | upload     |
+| 2  | 2023-09-21T10:32:03  | upload     |
+| 1  | 2023-09-21T10:29:46  | upload     |
++----+----------------------+------------+
+```
+
+#### Job commands
+
+##### __`prq job:info <id>`__
+
+Get information about the given job.
+
+Arguments:
+
+* `id`: ID of the job.
+
+Example output:
+
+```bash
+$ ./vendor/bin/prq job:info 2
+
++----------------------+ Job #2 ----+---------+---------+
+| Datetime initialized | Job name   | Status  | Context |
++----------------------+------------+---------+---------+
+| 2023-09-21T13:51:42  | invalidate | success | n/a     |
++----------------------+------------+---------+---------+
+```
+
+##### __`prq job:rerun <id>`__
+
+Rerun a failed job.
+
+Arguments:
+
+* `id`: ID of the failed job.
+
+Example output:
+
+```bash
+$ ./vendor/bin/prq job:rerun 2
+Successfully added job #2 to the back of the files_queue queue.
+```

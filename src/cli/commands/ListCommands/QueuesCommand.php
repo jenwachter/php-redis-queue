@@ -1,13 +1,14 @@
 <?php
 
-namespace PhpRedisQueue\cli\commands;
+namespace PhpRedisQueue\cli\commands\ListCommands;
 
+use PhpRedisQueue\cli\commands\Command;
 use PhpRedisQueue\QueueManager;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class QueuesListCommand extends Command
+class QueuesCommand extends Command
 {
   public function __construct(protected QueueManager $queueManager)
   {
@@ -17,7 +18,7 @@ class QueuesListCommand extends Command
   protected function configure()
   {
     $this
-      ->setName('queues:list')
+      ->setName('list:queues')
       ->setDescription('List queues');
   }
 
