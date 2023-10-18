@@ -3,7 +3,6 @@
   "description": "",
   "license": "MIT",
   "homepage": "http://github.com/jenwachter/php-redis-queue",
-  "version": "1.0",
   "authors": [
     {
       "name": "Jen Wachter",
