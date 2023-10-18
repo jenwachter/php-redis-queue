@@ -122,7 +122,7 @@ class QueueWorker
         $this->onJobCompletion($job, 'success', $context);
       } catch (\Throwable $e) {
         $context = $this->getExceptionData($e);
-        $this->log('warning', 'Queue job failed', ['data' => $job->get()]);
+        $this->log('warning', 'Queue job failed', ['context' => $job->get()]);
         $this->onJobCompletion($job, 'failed', $context);
       }
 
