@@ -54,6 +54,9 @@ class JobsCommand extends Command
     }
 
     $methodName = 'get' . ucfirst($status) . 'Jobs';
+    if ($status === 'success') {
+      $methodName = 'getSuccessfulJobs';
+    }
     $jobs = $this->queueManager->$methodName($queue);
 
     if (empty($jobs)) {
