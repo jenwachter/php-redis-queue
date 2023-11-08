@@ -4,7 +4,7 @@ namespace PhpRedisQueue\cli\commands\JobCommands;
 
 use PhpRedisQueue\cli\commands\Command;
 use PhpRedisQueue\models\Job;
-use PhpRedisQueue\JobManager;
+use PhpRedisQueue\managers\JobManager;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Helper\TableCell;
