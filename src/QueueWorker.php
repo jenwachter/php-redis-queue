@@ -2,6 +2,7 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\managers\QueueManager;
 use PhpRedisQueue\models\Job;
 use PhpRedisQueue\models\Queue;
 use PhpRedisQueue\traits\CanLog;

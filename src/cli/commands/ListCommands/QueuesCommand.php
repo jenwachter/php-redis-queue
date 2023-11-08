@@ -3,7 +3,7 @@
 namespace PhpRedisQueue\cli\commands\ListCommands;
 
 use PhpRedisQueue\cli\commands\Command;
-use PhpRedisQueue\QueueManager;
+use PhpRedisQueue\managers\QueueManager;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;

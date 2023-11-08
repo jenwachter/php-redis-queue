@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpRedisQueue;
+namespace PhpRedisQueue\managers;
 
 use PhpRedisQueue\models\Job;
 use PhpRedisQueue\models\Queue;

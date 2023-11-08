@@ -10,7 +10,7 @@ $app = new Application();
 $redis = new \Predis\Client();
 
 $jobManager = new \PhpRedisQueue\managers\JobManager($redis);
-$queueManager = new \PhpRedisQueue\QueueManager($redis);
+$queueManager = new \PhpRedisQueue\managers\QueueManager($redis);
 
 // list commands
 $app->add(new \PhpRedisQueue\cli\commands\ListCommands\JobsCommand($queueManager));

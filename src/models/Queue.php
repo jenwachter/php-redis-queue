@@ -2,8 +2,6 @@
 
 namespace PhpRedisQueue\models;
 
-use PhpRedisQueue\QueueManager;
-
 class Queue
 {
   /**
