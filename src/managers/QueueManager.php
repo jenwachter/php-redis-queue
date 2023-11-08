@@ -2,10 +2,8 @@
 
 namespace PhpRedisQueue\managers;
 
-use PhpRedisQueue\models\Job;
 use PhpRedisQueue\models\Queue;
 use PhpRedisQueue\traits\CanLog;
-use Psr\Log\LoggerInterface;
 
 class QueueManager
 {

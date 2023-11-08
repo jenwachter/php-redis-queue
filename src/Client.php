@@ -2,9 +2,7 @@
 
 namespace PhpRedisQueue;
 
-use PhpRedisQueue\models\Job;
 use PhpRedisQueue\traits\CanLog;
-use Psr\Log\LoggerInterface;
 
 class Client
 {
