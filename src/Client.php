@@ -14,7 +14,7 @@ class Client
 
   /**
    * @param \Predis\Client $redis
-   * @param LoggerInterface|null $logger
+   * @param array $config
    */
   public function __construct(protected \Predis\Client $redis, array $config = [])
   {
