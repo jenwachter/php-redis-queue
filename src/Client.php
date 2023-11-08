@@ -26,9 +26,9 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @return integer|false ID of job or FALSE on failure
+   * @return int|false ID of job or FALSE on failure
    */
-  public function push(string $queue, string $jobName = 'default', array $jobData = []): int
+  public function push(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
     $job = $this->jobManager->createJob($queue, $jobName, $jobData);
     $job->withMeta('status', 'pending')->save();
@@ -45,9 +45,9 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @return integer|false ID of job or FALSE on failure
+   * @return int|false ID of job or FALSE on failure
    */
-  public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int
+  public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
     $job = $this->jobManager->createJob($queue, $jobName, $jobData);
     $job->withMeta('status', 'pending')->save();
@@ -67,7 +67,7 @@ class Client
     * @return int           ID of new job
     * @throws \Exception
     */
-  public function rerun(int $jobId, bool $front = false)
+  public function rerun(int $jobId, bool $front = false): int
   {
     return $this->jobManager->rerun($jobId, $front);
   }
