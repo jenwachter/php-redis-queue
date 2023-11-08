@@ -19,7 +19,7 @@ class QueueWorker
    * Default configuration that is merged with configuration passed in constructor
    * @var array
    */
-  protected $defaultConfig = [
+  protected array $defaultConfig = [
     /**
      * Prevents PHP from timing out due to blpop()
      * Pass NULL to ignore this setting and use
@@ -48,7 +48,7 @@ class QueueWorker
     'wait' => 1,
   ];
 
-  protected $config = [];
+  protected array $config = [];
 
   /**
    * Array of callbacks used when processing work
