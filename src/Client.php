@@ -12,12 +12,6 @@ class Client
 
   protected JobManager $jobManager;
 
-  protected $defaultConfig = [
-    'logger' => null, // instance of Psr\Log\LoggerInterface
-  ];
-
-  protected $config = [];
-
   /**
    * @param \Predis\Client $redis
    * @param LoggerInterface|null $logger
@@ -26,11 +20,7 @@ class Client
   {
     $this->jobManager = new JobManager($redis, $config);
 
-    $this->config = array_merge($this->defaultConfig, $config);
-
-    if (isset($this->config['logger']) && !$this->config['logger'] instanceof \Psr\Log\LoggerInterface) {
-      throw new \InvalidArgumentException('Logger must be an instance of Psr\Log\LoggerInterface.');
-    }
+    $this->setLogger($config);
   }
 
   /**

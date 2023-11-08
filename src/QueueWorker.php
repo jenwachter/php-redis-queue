@@ -29,10 +29,6 @@ class QueueWorker
      * @var int
      */
     'default_socket_timeout' => -1,
-    /**
-     * @var Psr\Log\LoggerInterface|null
-     */
-    'logger' => null,
 
     /**
      * Length limit for failed job list
@@ -75,9 +71,7 @@ class QueueWorker
 
     $this->config = array_merge($this->defaultConfig, $config);
 
-    if (isset($this->config['logger']) && !$this->config['logger'] instanceof LoggerInterface) {
-      throw new \InvalidArgumentException('Logger must be an instance of Psr\Log\LoggerInterface.');
-    }
+    $this->setLogger($config);
   }
 
    /**

@@ -12,17 +12,6 @@ class QueueManager
   use CanLog;
 
   /**
-   * Default configuration that is merged with configuration passed in constructor
-   * @var array
-   */
-  protected $defaultConfig = [
-    /**
-     * @var Psr\Log\LoggerInterface|null
-     */
-    'logger' => null,
-  ];
-
-  /**
    * Redis key that holds the hash that keeps track
    * of active queues.
    * @var string
@@ -31,11 +20,7 @@ class QueueManager
 
   public function __construct(protected \Predis\Client $redis, array $config = [])
   {
-    $this->config = array_merge($this->defaultConfig, $config);
-
-    if (isset($this->config['logger']) && !$this->config['logger'] instanceof LoggerInterface) {
-      throw new \InvalidArgumentException('Logger must be an instance of Psr\Log\LoggerInterface.');
-    }
+    $this->setLogger($config);
   }
 
   public function getActiveQueues()
