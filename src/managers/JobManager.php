@@ -4,23 +4,15 @@ namespace PhpRedisQueue\managers;
 
 use PhpRedisQueue\models\Job;
 use PhpRedisQueue\models\Queue;
-use PhpRedisQueue\traits\CanLog;
 
-class JobManager
+class JobManager extends BaseManager
 {
-  use CanLog;
-
   /**
    * Redis key that holds the hash that keeps track
    * of active queues.
    * @var string
    */
   protected string $allQueues = 'php-redis-queue:queues';
-
-  public function __construct(protected \Predis\Client $redis, array $config = [])
-  {
-    $this->setLogger($config);
-  }
 
   public function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
   {
@@ -72,7 +64,6 @@ class JobManager
   /**
    * Rerun a job that previously failed.
    * @param int $jobId     ID of job to rerun
-   * @return int           ID of new job
    * @param boolean $front Push the new job to the front of the queue?
    * @return boolean       TRUE if job was successfully added to the queue
    * @throws \Exception

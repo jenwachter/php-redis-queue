@@ -3,23 +3,15 @@
 namespace PhpRedisQueue\managers;
 
 use PhpRedisQueue\models\Queue;
-use PhpRedisQueue\traits\CanLog;
 
-class QueueManager
+class QueueManager extends BaseManager
 {
-  use CanLog;
-
   /**
    * Redis key that holds the hash that keeps track
    * of active queues.
    * @var string
    */
   protected string $allQueues = 'php-redis-queue:queues';
-
-  public function __construct(protected \Predis\Client $redis, array $config = [])
-  {
-    $this->setLogger($config);
-  }
 
   public function getActiveQueues()
   {
