@@ -2,6 +2,8 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\managers\JobManager;
+use PhpRedisQueue\models\Job;
 use PhpRedisQueue\traits\CanLog;
 
 class Client
@@ -22,6 +24,37 @@ class Client
   }
 
   /**
+   * Creates a pending job
+   * @param string $queue   Queue name
+   * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
+   * @param array $jobData  Data associated with this job
+   * @return models\Job
+   */
+  public function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
+  {
+    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
+    $job->withMeta('status', 'pending')->save();
+
+    return $job;
+  }
+
+  /**
+   * Add a job to a queue
+   * @param string $queue  Queue name
+   * @param Job $job       Job to add
+   * @param boolean $front Push the new job to the front of the queue?
+   * @return false|int
+   */
+  public function addJobToQueue(string $queue, Job $job, $front = false): false|int
+  {
+    if ($this->jobManager->addJobToQueue($queue, $job, $front)) {
+      return $job->id();
+    }
+
+    return false;
+  }
+
+  /**
    * Pushes a job to the end of the queue
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
@@ -30,14 +63,8 @@ class Client
    */
   public function push(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
-    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
-    $job->withMeta('status', 'pending')->save();
-    
-    if ($this->jobManager->addJobToQueue($queue, $job)) {
-      return $job->id();
-    }
-
-    return false;
+    $job = $this->createJob($queue, $jobName, $jobData);
+    return $this->addJobToQueue($queue, $job);
   }
 
   /**
@@ -49,14 +76,8 @@ class Client
    */
   public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
-    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
-    $job->withMeta('status', 'pending')->save();
-
-    if ($this->jobManager->addJobToQueue($queue, $job, true)) {
-      return $job->id();
-    }
-
-    return false;
+    $job = $this->createJob($queue, $jobName, $jobData);
+    return $this->addJobToQueue($queue, $job, true);
   }
 
    /**
