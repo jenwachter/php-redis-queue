@@ -4,7 +4,8 @@ namespace PhpRedisQueue\models;
 
 class Job extends BaseModel
 {
-  protected string $modelIdentifier = 'id';
+  protected string $iterator = 'id';
+  protected string $keyGroup = 'jobs';
 
   protected function create(array $args = []): void
   {

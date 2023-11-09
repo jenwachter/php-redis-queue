@@ -8,8 +8,23 @@ class BaseModel
 {
   use CanLog;
 
-  protected string $modelIdentifier;
+  /**
+   * The name of the iterator that stores the latest assigned ID for new models.
+   * When a new model is created, this value is iterated to generate the new ID.
+   * @var string
+   */
+  protected string $iterator;
 
+  /**
+   * Cache key group
+   * @var string
+   */
+  protected string $keyGroup;
+
+  /**
+   * Model data
+   * @var array|null
+   */
   protected array|null $data;
 
   public function __construct(protected \Predis\Client $redis, ...$args)
@@ -113,12 +128,12 @@ class BaseModel
   protected function key(int|null $id = null): string
   {
     $id = $id ?? $this->id();
-    return 'php-redis-queue:jobs:' . $id;
+    return "php-redis-queue:$this->keyGroup:$id";
   }
 
   protected function createId(): int
   {
-    return $this->redis->incr("php-redis-queue:meta:$this->modelIdentifier");
+    return $this->redis->incr("php-redis-queue:meta:$this->iterator");
   }
 
   protected function getDatetime(): string
