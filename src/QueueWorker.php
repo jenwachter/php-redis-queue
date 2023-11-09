@@ -63,14 +63,17 @@ class QueueWorker
    */
   public function __construct(protected \Predis\Client $redis, string $queueName, array $config = [])
   {
+    if (isset($config['logger'])) {
+      Logger::set($config['logger']);
+      unset($config['logger']);
+    }
+
     $this->queue = new Queue($queueName);
 
-    $this->queueManager = new QueueManager($redis, $config);
+    $this->queueManager = new QueueManager($this->redis);
     $this->queueManager->registerQueue($this->queue);
 
     $this->config = array_merge($this->defaultConfig, $config);
-
-    $this->setLogger($config);
   }
 
    /**

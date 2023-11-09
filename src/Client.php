@@ -19,9 +19,11 @@ class Client
   public function __construct(protected \Predis\Client $redis, array $config = [])
   {
     $this->jobManager = new JobManager($redis, $config);
+    if (isset($config['logger'])) {
+      Logger::set($config['logger']);
+      unset($config['logger']);
+    }
 
-    $this->setLogger($config);
-  }
 
   /**
    * Creates a pending job

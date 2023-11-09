@@ -2,8 +2,12 @@
 
 namespace PhpRedisQueue\models;
 
+use PhpRedisQueue\traits\CanLog;
+
 class BaseModel
 {
+  use CanLog;
+
   protected string $modelIdentifier;
 
   protected array|null $data;

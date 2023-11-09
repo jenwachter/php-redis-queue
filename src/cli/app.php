@@ -2,7 +2,6 @@
 
 namespace PhpRedisQueue\cli;
 
-use config\helpers\CreateLogger;
 use Symfony\Component\Console\Application;
 
 $app = new Application();

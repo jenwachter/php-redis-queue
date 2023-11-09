@@ -8,8 +8,5 @@ class BaseManager
 {
   use CanLog;
 
-  public function __construct(protected \Predis\Client $redis, array $config = [])
-  {
-    $this->setLogger($config);
-  }
+  public function __construct(protected \Predis\Client $redis) {}
 }
