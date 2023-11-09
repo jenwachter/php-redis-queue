@@ -47,9 +47,9 @@ class Client
    * @param boolean $front Push the new job to the front of the queue?
    * @return false|int
    */
-  public function addJobToQueue(string $queue, Job $job, $front = false): false|int
+  public function addJobToQueue(Job $job, $front = false): false|int
   {
-    if ($this->jobManager->addJobToQueue($queue, $job, $front)) {
+    if ($this->jobManager->addJobToQueue($job, $front)) {
       return $job->id();
     }
 
@@ -66,7 +66,7 @@ class Client
   public function push(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
     $job = $this->createJob($queue, $jobName, $jobData);
-    return $this->addJobToQueue($queue, $job);
+    return $this->addJobToQueue($job);
   }
 
   /**
@@ -79,7 +79,7 @@ class Client
   public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
     $job = $this->createJob($queue, $jobName, $jobData);
-    return $this->addJobToQueue($queue, $job, true);
+    return $this->addJobToQueue($job, true);
   }
 
    /**

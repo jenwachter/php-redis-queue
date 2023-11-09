@@ -31,15 +31,14 @@ class JobManager extends BaseManager
 
   /**
    * Add a job to a queue
-   * @param string $queueName
    * @param Job $job
    * @param bool $front
    * @return boolean       TRUE if job was successfully added to the queue
    */
-  public function addJobToQueue(string $queueName, Job $job, bool $front = false): bool
+  public function addJobToQueue(Job $job, bool $front = false): bool
   {
     $method = $front ? 'lpush' : 'rpush';
-    $queue = new Queue($queueName);
+    $queue = new Queue($job->queue());
 
     $length = $this->redis->llen($queue->pending);
     $newLength = $this->redis->$method($queue->pending, $job->id());
@@ -87,6 +86,6 @@ class JobManager extends BaseManager
     // remove from failed list
     $this->redis->lrem($queue->failed, -1, $job->id());
 
-    return $this->addJobToQueue($job->queue(), $job, $front);
+    return $this->addJobToQueue($job, $front);
   }
 }
