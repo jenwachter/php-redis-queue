@@ -2,15 +2,14 @@
 
 namespace PhpRedisQueue;
 
-use PhpRedisQueue\managers\JobManager;
-use PhpRedisQueue\models\Job;
+use PhpRedisQueue\managers\JobGroupManager;
+use PhpRedisQueue\traits\CanCreateJobs;
 use PhpRedisQueue\traits\CanLog;
 
 class Client
 {
+  use CanCreateJobs;
   use CanLog;
-
-  protected JobManager $jobManager;
 
   /**
    * @param \Predis\Client $redis
@@ -18,42 +17,14 @@ class Client
    */
   public function __construct(protected \Predis\Client $redis, array $config = [])
   {
-    $this->jobManager = new JobManager($redis, $config);
     if (isset($config['logger'])) {
       Logger::set($config['logger']);
       unset($config['logger']);
     }
 
+    $this->setJobManager($redis);
 
-  /**
-   * Creates a pending job
-   * @param string $queue   Queue name
-   * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
-   * @param array $jobData  Data associated with this job
-   * @return models\Job
-   */
-  public function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
-  {
-    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
-    $job->withMeta('status', 'pending')->save();
-
-    return $job;
-  }
-
-  /**
-   * Add a job to a queue
-   * @param string $queue  Queue name
-   * @param Job $job       Job to add
-   * @param boolean $front Push the new job to the front of the queue?
-   * @return false|int
-   */
-  public function addJobToQueue(Job $job, $front = false): false|int
-  {
-    if ($this->jobManager->addJobToQueue($job, $front)) {
-      return $job->id();
-    }
-
-    return false;
+    $this->jobGroupManager = new JobGroupManager($redis);
   }
 
   /**
@@ -104,5 +75,10 @@ class Client
   public function remove(string $queue, int $jobId): bool
   {
     return $this->jobManager->removeJobFromQueue($queue, $jobId);
+  }
+
+  public function createJobGroup($total = null): models\JobGroup
+  {
+    return $this->jobGroupManager->createJobGroup($total);
   }
 }

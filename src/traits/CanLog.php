@@ -3,7 +3,6 @@
 namespace PhpRedisQueue\traits;
 
 use PhpRedisQueue\Logger;
-use Psr\Log\LoggerInterface;
 
 trait CanLog
 {
