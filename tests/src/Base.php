@@ -57,6 +57,7 @@ abstract class Base extends \PHPUnit\Framework\TestCase
         'datetime' => $this->getDatetime(),
         'queue' => 'queuename',
         'jobName' => $jobName,
+        'group' => null,
         'status' => $status,
         // 'original' => $originalJobData,
       ],

@@ -2,6 +2,8 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\models\Job;
+use PhpRedisQueue\models\JobGroup;
 use PhpRedisQueue\models\Queue;
 
 class ClientTest extends Base
@@ -174,5 +176,67 @@ class ClientTest extends Base
   {
     $client = new ClientMock($this->predis);
     $this->assertFalse($client->remove('queuename', 10));
+  }
+
+  public function testJobGroup__autoQueue()
+  {
+    $client = new ClientMock($this->predis);
+    $group = $client->createJobGroup(3);
+
+    // make sure the change is present on the group object
+    $this->assertEquals(3, ($group->get())['meta']['total']);
+
+    // make sure it was saved
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()))->get();
+    $this->assertEquals(3, $newGroup['meta']['total']);
+
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    // make sure the group auto queued
+    $this->assertTrue(($group->get())['meta']['queued']);
+
+    // can't queue it again
+    $this->assertFalse($group->queue());
+
+    // can't add more jobs
+    $this->assertFalse($group->push('queuename'));
+  }
+
+  public function testJobGroup__manualQueue()
+  {
+    $client = new ClientMock($this->predis);
+    $group = $client->createJobGroup();
+
+    // make sure the change is present on the group object
+    $this->assertNull(($group->get())['meta']['total']);
+
+    // make sure it was saved
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()))->get();
+    $this->assertNull($newGroup['meta']['total']);
+
+    $jid = $group->push('queuename');
+    $job = (new Job($this->predis, $jid))->get();
+    $this->assertEquals(1, $job['meta']['group']);
+
+    $group->push('queuename');
+    $job = (new Job($this->predis, $jid))->get();
+    $this->assertEquals(1, $job['meta']['group']);
+
+    $group->push('queuename');
+    $job = (new Job($this->predis, $jid))->get();
+    $this->assertEquals(1, $job['meta']['group']);
+
+    $this->assertTrue($group->queue());
+
+    // make sure the change is present on the group object
+    $this->assertEquals(3, ($group->get())['meta']['total']);
+
+    // make sure it was saved
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()))->get();
+    $this->assertEquals(3, $newGroup['meta']['total']);
   }
 }
