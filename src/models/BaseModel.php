@@ -6,11 +6,11 @@ class BaseModel
 {
   protected string $modelIdentifier;
 
-  protected $data;
+  protected array|null $data;
 
   public function __construct(protected \Predis\Client $redis, ...$args)
   {
-    if (is_int($args[0])) {
+    if (isset($args[0]) && is_int($args[0])) {
       $this->load($args[0]);
     } else {
       $this->create($args);
