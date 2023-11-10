@@ -54,7 +54,7 @@ abstract class Base extends \PHPUnit\Framework\TestCase
     $data = [
       'meta' => [
         'id' => $id,
-        'datetime' => $this->getDatetime(),
+        'datetime' => '2023-01-01T10:00:00',
         'queue' => 'queuename',
         'jobName' => $jobName,
         'group' => null,

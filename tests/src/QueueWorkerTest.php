@@ -2,6 +2,7 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\models\JobGroup;
 use PhpRedisQueue\models\Queue;
 
 class QueueWorkerTest extends Base
@@ -505,5 +506,76 @@ class QueueWorkerTest extends Base
 
     // first job has been booted from the queue
     $this->assertEmpty($this->predis->get('php-redis-queue:jobs:1'));
+  }
+
+  public function testsWork__jobGroup__autoQueue()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $worker->addCallback('default', function () {});
+
+    $client = new ClientMock($this->predis);
+
+    $group = $client->createJobGroup(3);
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    $worker->work(false);
+
+    // make sure all jobs were successful
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+
+    $this->assertEquals(3, $newGroup->getMeta('total'));
+    $this->assertEquals(3, $newGroup->getMeta('success'));
+    $this->assertEquals(0, $newGroup->getMeta('failed'));
+    $this->assertTrue($newGroup->getMeta('complete'));
+  }
+
+  public function testsWork__jobGroup__manualQueue()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $worker->addCallback('default', function () {});
+
+    $client = new ClientMock($this->predis);
+
+    $group = $client->createJobGroup();
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->queue();
+
+    $worker->work(false);
+
+    // all jobs were successful
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+    $this->assertEquals(4, $newGroup->getMeta('total'));
+    $this->assertEquals(4, $newGroup->getMeta('success'));
+    $this->assertEquals(0, $newGroup->getMeta('failed'));
+    $this->assertTrue($newGroup->getMeta('complete'));
+  }
+
+  public function testsWork__jobGroup__someFailures()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $worker->addCallback('default', function () {});
+
+    $client = new ClientMock($this->predis);
+
+    $group = $client->createJobGroup();
+    $group->push('queuename', 'unknownCallback');
+    $group->push('queuename');
+    $group->push('queuename', 'unknownCallback');
+    $group->push('queuename');
+    $group->queue();
+
+    $worker->work(false);
+
+    // all jobs were successful
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+    $this->assertEquals(4, $newGroup->getMeta('total'));
+    $this->assertEquals(2, $newGroup->getMeta('success'));
+    $this->assertEquals(2, $newGroup->getMeta('failed'));
+    $this->assertTrue($newGroup->getMeta('complete'));
   }
 }

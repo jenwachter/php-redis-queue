@@ -193,8 +193,6 @@ class ClientTest extends Base
     $group->push('queuename');
     $group->push('queuename');
     $group->push('queuename');
-    $group->push('queuename');
-    $group->push('queuename');
 
     // make sure the group auto queued
     $this->assertTrue(($group->get())['meta']['queued']);
