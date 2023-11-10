@@ -73,9 +73,9 @@ class BaseModel
 
   /**
    * Get the model's data
-   * @return mixed
+   * @return array|null
    */
-  public function get()
+  public function get(): ?array
   {
     return $this->data;
   }
@@ -86,7 +86,18 @@ class BaseModel
    */
   public function json()
   {
-    return json_encode($this->data);
+    return json_encode($this->get());
+  }
+
+  /**
+   * Get a meta value by key
+   * @param $key
+   * @return mixed
+   */
+  public function getMeta($key): mixed
+  {
+    $data = $this->get();
+    return $data['meta'][$key] ?? null;
   }
 
   /**
@@ -95,7 +106,7 @@ class BaseModel
    */
   public function id()
   {
-    return $this->data['meta']['id'];
+    return $this->getMeta('id');
   }
 
   /**

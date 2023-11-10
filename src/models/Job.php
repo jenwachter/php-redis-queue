@@ -26,22 +26,23 @@ class Job extends BaseModel
 
   public function queue()
   {
-    return $this->data['meta']['queue'];
+    return $this->getMeta('queue');
   }
 
   public function jobName()
   {
-    return $this->data['meta']['jobName'];
+    return $this->getMeta('jobName');
   }
 
   public function status()
   {
-    return $this->data['meta']['status'];
+    return $this->getMeta('status');
   }
 
   public function jobData()
   {
-    return $this->data['job'];
+    $data = $this->get();
+    return $data['job'];
   }
 
   public function withRerun()
