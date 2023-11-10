@@ -19,11 +19,13 @@ trait CanCreateJobs
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
+   * @param int|null $group ID of the job group this job belongs to, if any
    * @return Job
    */
-  public function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
+  public function createJob(string $queue, string $jobName = 'default', array $jobData = [], int|null $group = null): Job
   {
-    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
+    $job = $this->jobManager->createJob($queue, $jobName, $jobData, $group);
+
     $job->withMeta('status', 'pending')->save();
 
     return $job;

@@ -14,9 +14,9 @@ class JobManager extends BaseManager
    */
   protected string $allQueues = 'php-redis-queue:queues';
 
-  public function createJob(string $queue, string $jobName = 'default', array $jobData = []): Job
+  public function createJob(string $queue, string $jobName = 'default', array $jobData = [], int|null $group = null): Job
   {
-    return new Job($this->redis, $queue, $jobName, $jobData);
+    return new Job($this->redis, $queue, $jobName, $jobData, $group);
   }
 
   /**

@@ -20,6 +20,7 @@ class Job extends BaseModel
 
     $meta['queue'] = $args[0];
     $meta['jobName'] = $args[1];
+    $meta['group'] = $args[3] ?? null;
 
     return $meta;
   }
@@ -37,6 +38,11 @@ class Job extends BaseModel
   public function status()
   {
     return $this->getMeta('status');
+  }
+
+  public function group()
+  {
+    return $this->getMeta('group');
   }
 
   public function jobData()

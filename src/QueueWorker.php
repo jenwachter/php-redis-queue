@@ -4,6 +4,7 @@ namespace PhpRedisQueue;
 
 use PhpRedisQueue\managers\QueueManager;
 use PhpRedisQueue\models\Job;
+use PhpRedisQueue\models\JobGroup;
 use PhpRedisQueue\models\Queue;
 use PhpRedisQueue\traits\CanLog;
 
@@ -159,6 +160,11 @@ class QueueWorker
 
     if ($context) {
       $job->withMeta('context', $context)->save();
+    }
+
+    if ($groupId = $job->group()) {
+      $group = new JobGroup($this->redis, $groupId);
+      $group->onJobComplete($job, $status === 'success');
     }
 
     $this->hook($job->jobName() . '_after', $job->get(), $status === 'success');

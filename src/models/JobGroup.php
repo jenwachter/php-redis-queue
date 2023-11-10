@@ -29,10 +29,18 @@ class JobGroup extends BaseModel
   {
     $meta = parent::createMeta($args);
 
+    // have the jobs been added to their queues
     $meta['queued'] = false;
+
+    // have all jobs in this completed?
+    $meta['complete'] = false;
+
+    // total number of jobs in this group
     $meta['total'] = null;
-    $meta['success'] = [];
-    $meta['failed'] = [];
+
+    // keeps track of number of successful and failed jobs
+    $meta['success'] = 0;
+    $meta['failed'] = 0;
 
     return $meta;
   }
@@ -50,7 +58,7 @@ class JobGroup extends BaseModel
       return false;
     }
 
-    $job = $this->createJob($queue, $jobName, $jobData);
+    $job = $this->createJob($queue, $jobName, $jobData, $this->id());
 
     // add job to the group and save
     $this->data['jobs'][] = $job->id();
@@ -66,13 +74,13 @@ class JobGroup extends BaseModel
 
   /**
    * Add the group's jobs to the queue
-   * @return void
+   * @return bool
    */
-  public function queue(): void
+  public function queue(): bool
   {
     if ($this->data['meta']['queued']) {
       // the group has already been queued; return
-      return;
+      return false;
     }
 
     if (!$this->data['meta']['total']) {
@@ -89,5 +97,26 @@ class JobGroup extends BaseModel
     }
 
     $this->withMeta('queued', true)->save();
+
+    return true;
+  }
+
+  public function onJobComplete(Job $job, bool $success)
+  {
+    $metaKey = $success ? 'success' : 'failed';
+
+    // increment success/fail count
+    $newValue = $this->getMeta($metaKey) + 1;
+    $this->withMeta($metaKey, $newValue);
+
+    // see if this group is complete
+    if (($this->getMeta('success') + $this->getMeta('failed')) < $this->getMeta('total')) {
+      $this->log('info', 'group still has pending jobs...', [$this->data]);
+      $this->save();
+      return;
+    }
+
+    $this->log('info', 'Group complete', [$this->data]);
+    $this->withMeta('complete', true)->save();
   }
 }
