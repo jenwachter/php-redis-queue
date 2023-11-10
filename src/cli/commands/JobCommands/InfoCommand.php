@@ -34,7 +34,7 @@ class InfoCommand extends Command
   protected function execute(InputInterface $input, OutputInterface $output)
   {
     $id = $input->getArgument('id');
-    $job = $this->jobManager->getJob($id);
+    $job = $this->jobManager->getJob($id)->get();
 
     if (empty($job)) {
       $output->writeln(sprintf('Job #%s not found.', $id));

@@ -20,13 +20,12 @@ class JobManager extends BaseManager
   }
 
   /**
-   * Get a list of active queues and how many workers are
-   * available per queue.
+   * Get a job by ID
    * @return array
    */
   public function getJob($id)
   {
-    return (new Job($this->redis, (int) $id))->get();
+    return (new Job($this->redis, (int) $id));
   }
 
   /**
@@ -69,7 +68,7 @@ class JobManager extends BaseManager
    */
   public function rerun(int $jobId, bool $front = false): bool
   {
-    $job = new Job($this->redis, $jobId);
+    $job = $this->getJob($jobId);
 
     if (!$job->get()) {
       throw new \Exception("Job #$jobId not found. Cannot rerun.");
