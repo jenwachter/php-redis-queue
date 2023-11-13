@@ -2,6 +2,7 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\models\Job;
 use PhpRedisQueue\models\JobGroup;
 use PhpRedisQueue\models\Queue;
 
@@ -538,6 +539,18 @@ class QueueWorkerTest extends Base
 
     $client = new ClientMock($this->predis);
 
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['group_after'])
+      ->getMock();
+
+    $mock->expects($this->exactly(1))
+      ->method('group_after')
+      ->with($this->isInstanceOf(JobGroup::class), true);
+
+    // add callbacks
+    $worker->addCallback('group_after', [$mock, 'group_after']);
+
     $group = $client->createJobGroup();
     $group->push('queuename');
     $group->push('queuename');
@@ -561,6 +574,18 @@ class QueueWorkerTest extends Base
     $worker->addCallback('default', function () {});
 
     $client = new ClientMock($this->predis);
+
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['group_after'])
+      ->getMock();
+
+    $mock->expects($this->exactly(1))
+      ->method('group_after')
+      ->with($this->isInstanceOf(JobGroup::class), false);
+
+    // add callbacks
+    $worker->addCallback('group_after', [$mock, 'group_after']);
 
     $group = $client->createJobGroup();
     $group->push('queuename', 'unknownCallback');

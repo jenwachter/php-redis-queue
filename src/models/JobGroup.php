@@ -109,14 +109,16 @@ class JobGroup extends BaseModel
     $newValue = $this->getMeta($metaKey) + 1;
     $this->withMeta($metaKey, $newValue);
 
-    // see if this group is complete
-    if (($this->getMeta('success') + $this->getMeta('failed')) < $this->getMeta('total')) {
-      $this->log('info', 'group still has pending jobs...', [$this->data]);
-      $this->save();
-      return;
+    $successfulJobs = $this->getMeta('success');
+    $failedJobs = $this->getMeta('failed');
+    $totalJobs = $this->getMeta('total');
+
+    if ($successfulJobs + $failedJobs === $totalJobs) {
+      // all jobs have run
+      $this->withMeta('complete', true);
     }
 
-    $this->log('info', 'Group complete', [$this->data]);
-    $this->withMeta('complete', true)->save();
+    $this->save();
+    return $this;
   }
 }
