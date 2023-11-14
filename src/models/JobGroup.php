@@ -29,14 +29,15 @@ class JobGroup extends BaseModel
   {
     $meta = parent::createMeta($args);
 
-    // have the jobs been added to their queues
-    $meta['queued'] = false;
+    return array_merge($meta, [
+      'queued' => false,
+      'complete' => false,
+      'total' => null,
+      'success' => 0,
+      'failed' => 0,
+    ]);
+  }
 
-    // have all jobs in this completed?
-    $meta['complete'] = false;
-
-    // total number of jobs in this group
-    $meta['total'] = null;
 
     // keeps track of number of successful and failed jobs
     $meta['success'] = 0;
