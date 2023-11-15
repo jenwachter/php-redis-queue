@@ -102,13 +102,13 @@ class JobGroup extends BaseModel
     $metaKey = $success ? 'success' : 'failed';
 
     // increment success/fail count
-    $value = $this->getMeta($metaKey);
+    $value = $this->get($metaKey);
     $value[] = $job->id();
     $this->withMeta($metaKey, $value);
 
-    $successfulJobs = count($this->getMeta('success'));
-    $failedJobs = count($this->getMeta('failed'));
-    $totalJobs = $this->getMeta('total');
+    $successfulJobs = count($this->get('success'));
+    $failedJobs = count($this->get('failed'));
+    $totalJobs = $this->get('total');
 
     if ($successfulJobs + $failedJobs === $totalJobs) {
       // all jobs have run

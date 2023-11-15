@@ -166,8 +166,8 @@ class QueueWorker
       $group = new JobGroup($this->redis, $groupId);
       $group = $group->onJobComplete($job, $status === 'success');
 
-      if ($group->getMeta('complete')) {
-        $this->hook('group_after', $group, count($group->getMeta('failed')) === 0);
+      if ($group->get('complete')) {
+        $this->hook('group_after', $group, count($group->get('failed')) === 0);
       }
     }
 

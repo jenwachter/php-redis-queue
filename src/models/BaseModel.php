@@ -72,11 +72,15 @@ class BaseModel
   }
 
   /**
-   * Get the model's data
-   * @return array|null
+   * @param string|null $key
+   * @return mixed
    */
-  public function get(): ?array
+  public function get(string|null $key = null): mixed
   {
+    if ($key) {
+      return $this->data['meta'][$key] ?? $this->data[$key] ?? null;
+    }
+
     return $this->data;
   }
 
@@ -90,23 +94,12 @@ class BaseModel
   }
 
   /**
-   * Get a meta value by key
-   * @param $key
-   * @return mixed
-   */
-  public function getMeta($key): mixed
-  {
-    $data = $this->get();
-    return $data['meta'][$key] ?? null;
-  }
-
-  /**
    * Get the model's ID
    * @return mixed
    */
   public function id()
   {
-    return $this->getMeta('id');
+    return $this->get('id');
   }
 
   /**
