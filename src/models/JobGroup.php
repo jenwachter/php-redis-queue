@@ -18,18 +18,12 @@ class JobGroup extends BaseModel
     parent::__construct($redis, ...$args);
   }
 
-  protected function create(array $args = []): void
+  protected function create(array $args = []): array
   {
-    parent::create($args);
+    $data = parent::create($args);
 
-    $this->data['jobs'] = [];
-  }
-
-  protected function createMeta($args = []): array
-  {
-    $meta = parent::createMeta($args);
-
-    return array_merge($meta, [
+    return array_merge($data, [
+      'jobs' => [],
       'queued' => false,
       'complete' => false,
       'total' => null,
@@ -48,7 +42,7 @@ class JobGroup extends BaseModel
    */
   public function push(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
-    if ($this->data['meta']['queued']) {
+    if ($this->get('queued')) {
       return false;
     }
 
@@ -57,10 +51,12 @@ class JobGroup extends BaseModel
     // add job to the group and save
     $jid = $job->id();
     $this->data['jobs'][] = $jid;
-    $this->data['meta']['pending'] = $jid;
+    $this->withMeta('pending', $jid);
     $this->save();
 
-    if ($this->data['meta']['total'] && count($this->data['jobs']) === $this->data['meta']['total']) {
+    $total = $this->get('total');
+
+    if ($total && count($this->get('jobs')) === $total) {
       $this->queue();
     }
 
@@ -74,20 +70,17 @@ class JobGroup extends BaseModel
    */
   public function queue(): bool
   {
-    if ($this->data['meta']['queued']) {
+    if ($this->get('queued')) {
       // the group has already been queued; return
       return false;
     }
 
-    if (!$this->data['meta']['total']) {
+    if (!$this->get('total')) {
       // add total, if there isn't one yet
-      $this->withMeta('total', count($this->data['jobs']))->save();
+      $this->withMeta('total', count($this->get('jobs')))->save();
     }
 
-    // make sure the group wasn't already triggered
-    $this->log('info', 'JobGroup::queue', $this->data);
-
-    foreach ($this->data['jobs'] as $id) {
+    foreach ($this->get('jobs') as $id) {
       $job = new Job($this->redis, $id);
       $this->addJobToQueue($job);
     }

@@ -7,47 +7,37 @@ class Job extends BaseModel
   protected string $iterator = 'id';
   protected string $keyGroup = 'jobs';
 
-  protected function create(array $args = []): void
+  protected function create(array $args = []): array
   {
-    parent::create($args);
+    $data = parent::create($args);
 
-    $this->data['job'] = $args[2];
-  }
-
-  protected function createMeta($args = []): array
-  {
-    $meta = parent::createMeta($args);
-
-    $meta['queue'] = $args[0];
-    $meta['jobName'] = $args[1];
-    $meta['group'] = $args[3] ?? null;
-
-    return $meta;
-  }
-
-  public function jobData()
-  {
-    $data = $this->get();
-    return $data['job'];
+    return array_merge($data, [
+      'jobData' => $args[2],
+      'queue' => $args[0],
+      'jobName' => $args[1],
+      'group' => $args[3] ?? null,
+    ]);
   }
 
   public function withRerun()
   {
-    if (!isset($this->data['runs'])) {
+    if (!$this->get('runs')) {
       $this->data['runs'] = [];
     }
 
     // add latest run to the front of the array
-    array_unshift($this->data['runs'], $this->data['meta']);
+    $rerunData = $this->data;
+    unset($rerunData['runs']);
+    array_unshift($this->data['runs'], $rerunData);
 
     // update datetime
-    $this->data['meta']['datetime'] = $this->getDatetime();
+    $this->withMeta('datetime', $this->getDatetime());
 
     // update status
-    $this->data['meta']['status'] = 'pending';
+    $this->withMeta('status', 'pending');
 
     // remove context
-    unset($this->data['meta']['context']);
+    $this->withoutMeta('context');
 
     return $this;
   }

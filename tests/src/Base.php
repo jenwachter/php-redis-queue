@@ -52,20 +52,17 @@ abstract class Base extends \PHPUnit\Framework\TestCase
   )
   {
     $data = [
-      'meta' => [
-        'id' => $id,
-        'datetime' => '2023-01-01T10:00:00',
-        'queue' => 'queuename',
-        'jobName' => $jobName,
-        'group' => null,
-        'status' => $status,
-        // 'original' => $originalJobData,
-      ],
-      'job' => $jobData,
+      'id' => $id,
+      'datetime' => '2023-01-01T10:00:00',
+      'jobData' => $jobData,
+      'queue' => 'queuename',
+      'jobName' => $jobName,
+      'group' => null,
+      'status' => $status,
     ];
 
     if ($context) {
-      $data['meta']['context'] = $context;
+      $data['context'] = $context;
     }
 
     if ($runs) {

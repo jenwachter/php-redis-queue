@@ -30,9 +30,9 @@ class BaseModel
   public function __construct(protected \Predis\Client $redis, ...$args)
   {
     if (isset($args[0]) && is_int($args[0])) {
-      $this->load($args[0]);
+      $this->data = $this->load($args[0]);
     } else {
-      $this->create($args);
+      $this->data = $this->create($args);
       $this->save();
     }
   }
@@ -40,19 +40,9 @@ class BaseModel
   /**
    * Create the model data
    * @param array $args
-   * @return void
-   */
-  protected function create(array $args = []): void
-  {
-    $this->data = ['meta' => $this->createMeta($args)];
-  }
-
-  /**
-   * Create the model's metadata
-   * @param array $args
    * @return array
    */
-  protected function createMeta(array $args = []): array
+  protected function create(array $args = []): array
   {
     return [
       'id' => $this->createId(),
@@ -63,12 +53,12 @@ class BaseModel
   /**
    * Load an existing model's data, using the given ID
    * @param int $id
-   * @return void
+   * @return array|null
    */
-  protected function load(int $id): void
+  protected function load(int $id): array|null
   {
     $data = $this->redis->get($this->key($id));
-    $this->data = $data ? json_decode($data, true) : null;
+    return $data ? json_decode($data, true) : null;
   }
 
   /**
@@ -78,7 +68,7 @@ class BaseModel
   public function get(string|null $key = null): mixed
   {
     if ($key) {
-      return $this->data['meta'][$key] ?? $this->data[$key] ?? null;
+      return $this->data[$key] ?? null;
     }
 
     return $this->data;
@@ -110,9 +100,16 @@ class BaseModel
    */
   public function withMeta(string $with, mixed $withValue)
   {
-    $this->data['meta'][$with] = $withValue;
+    $this->data[$with] = $withValue;
 
     return $this;
+  }
+
+  public function withoutMeta(string $without)
+  {
+    if (isset($this->data[$without])) {
+      unset($this->data[$without]);
+    }
   }
 
   /**

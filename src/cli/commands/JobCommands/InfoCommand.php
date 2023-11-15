@@ -45,15 +45,15 @@ class InfoCommand extends Command
       $table
         ->setHeaderTitle(sprintf('Job #%s', $id))
         ->setHeaders($this->getJobTableHeaders())
-        ->setRows(array_map([$this, 'getJobTableRow'], [$job['meta']]));
+        ->setRows(array_map([$this, 'getJobTableRow'], [$job]));
       $table->render();
 
-      if (!empty($job['job'])) {
+      if (!empty($job['jobData'])) {
         $table = new Table($output);
         $table
           ->setHeaderTitle(sprintf('Data attached to job #%s', $id))
           ->setRows([
-            [print_r($job['job'], true)]
+            [print_r($job['jobData'], true)]
           ]);
 
         $output->writeln("");

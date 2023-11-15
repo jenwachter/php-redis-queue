@@ -150,7 +150,7 @@ Arguments:
   * `jobName_before(array $data)`
     * `$data`: Array of data passed to the job by the client
   * `jobName_after(array $data, bool $success)`
-    * `$data`: Array of data passed to the job by the client. Exception data from failed jobs is available in `$data['meta']['context']`
+    * `$data`: Array of data passed to the job by the client. Exception data from failed jobs is available in `$data['context']`
     * `$success`: Job status; success (`true`) or failure (`false`)
 
 #### __`work(bool $block = true)`__

@@ -131,7 +131,9 @@ class ClientTest extends Base
       encode: false,
       status: 'pending',
       id: 15,
-      runs: [$originalJob['meta']]
+      runs: [
+        array_diff_key($originalJob, array_flip(['runs']))
+      ]
     ), $this->getJobById(15));
 
     // out of the failed list
@@ -184,18 +186,18 @@ class ClientTest extends Base
     $group = $client->createJobGroup(3);
 
     // make sure the change is present on the group object
-    $this->assertEquals(3, ($group->get())['meta']['total']);
+    $this->assertEquals(3, $group->get('total'));
 
     // make sure it was saved
-    $newGroup = (new JobGroup($this->predis, (int) $group->id()))->get();
-    $this->assertEquals(3, $newGroup['meta']['total']);
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+    $this->assertEquals(3, $newGroup->get('total'));
 
     $group->push('queuename');
     $group->push('queuename');
     $group->push('queuename');
 
     // make sure the group auto queued
-    $this->assertTrue(($group->get())['meta']['queued']);
+    $this->assertTrue($group->get('queued'));
 
     // can't queue it again
     $this->assertFalse($group->queue());
@@ -210,31 +212,31 @@ class ClientTest extends Base
     $group = $client->createJobGroup();
 
     // make sure the change is present on the group object
-    $this->assertNull(($group->get())['meta']['total']);
+    $this->assertNull($group->get('total'));
 
     // make sure it was saved
-    $newGroup = (new JobGroup($this->predis, (int) $group->id()))->get();
-    $this->assertNull($newGroup['meta']['total']);
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+    $this->assertNull($newGroup->get('total'));
 
     $jid = $group->push('queuename');
-    $job = (new Job($this->predis, $jid))->get();
-    $this->assertEquals(1, $job['meta']['group']);
+    $job = (new Job($this->predis, $jid));
+    $this->assertEquals(1, $job->get('group'));
 
     $group->push('queuename');
-    $job = (new Job($this->predis, $jid))->get();
-    $this->assertEquals(1, $job['meta']['group']);
+    $job = (new Job($this->predis, $jid));
+    $this->assertEquals(1, $job->get('group'));
 
     $group->push('queuename');
-    $job = (new Job($this->predis, $jid))->get();
-    $this->assertEquals(1, $job['meta']['group']);
+    $job = (new Job($this->predis, $jid));
+    $this->assertEquals(1, $job->get('group'));
 
     $this->assertTrue($group->queue());
 
     // make sure the change is present on the group object
-    $this->assertEquals(3, ($group->get())['meta']['total']);
+    $this->assertEquals(3, $group->get('total'));
 
     // make sure it was saved
-    $newGroup = (new JobGroup($this->predis, (int) $group->id()))->get();
-    $this->assertEquals(3, $newGroup['meta']['total']);
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+    $this->assertEquals(3, $newGroup->get('total'));
   }
 }

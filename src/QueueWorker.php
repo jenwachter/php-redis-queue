@@ -116,7 +116,7 @@ class QueueWorker
       $this->hook($jobName . '_before', $job->get());
 
       try {
-        $context = call_user_func($this->callbacks[$jobName], $job->jobData());
+        $context = call_user_func($this->callbacks[$jobName], $job->get('jobData'));
         $this->onJobCompletion($job, 'success', $context);
       } catch (\Throwable $e) {
         $context = $this->getExceptionData($e);
@@ -172,14 +172,6 @@ class QueueWorker
     }
 
     $this->hook($job->get('jobName') . '_after', $job->get(), $status === 'success');
-
-    // if ($status === 'success' && $job['meta']['original']) {
-    //   // remove the old job from the failed queue
-    //   $this->redis->lrem($this->failed, -1, json_encode($job['meta']['original']['meta']['id']));
-    //
-    //   // remove the old job's data
-    //   $this->deleteJob($job['meta']['original']['meta']['id']);
-    // }
   }
 
   /**

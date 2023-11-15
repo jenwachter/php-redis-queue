@@ -44,7 +44,7 @@ class RerunCommand extends Command
     $runNow = $input->getArgument('now') !== false;
 
     $job = $this->jobManager->getJob($id)->get();
-    $jobQueue = $job['meta']['queue'];
+    $jobQueue = $job->get('queue');
 
     if (!in_array($jobQueue, $this->queueManager->getActiveQueues())) {
       $output->writeln(sprintf('<error>Error: Cannot rerun job #%s.</error>', $id));

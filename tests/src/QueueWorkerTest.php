@@ -369,7 +369,9 @@ class QueueWorkerTest extends Base
     $this->assertEquals($this->getJobData(
       id: 15,
       status: 'success',
-      runs: [$originalJob['meta']]
+      runs: [
+        array_diff_key($originalJob, array_flip(['runs']))
+      ]
     ), $this->predis->get('php-redis-queue:jobs:15'));
 
     // old job is removed ands its job record is also gone
