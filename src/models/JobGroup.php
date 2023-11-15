@@ -33,17 +33,10 @@ class JobGroup extends BaseModel
       'queued' => false,
       'complete' => false,
       'total' => null,
-      'success' => 0,
-      'failed' => 0,
+      'pending' => [],
+      'success' => [],
+      'failed' => [],
     ]);
-  }
-
-
-    // keeps track of number of successful and failed jobs
-    $meta['success'] = 0;
-    $meta['failed'] = 0;
-
-    return $meta;
   }
 
   /**
@@ -62,7 +55,9 @@ class JobGroup extends BaseModel
     $job = $this->createJob($queue, $jobName, $jobData, $this->id());
 
     // add job to the group and save
-    $this->data['jobs'][] = $job->id();
+    $jid = $job->id();
+    $this->data['jobs'][] = $jid;
+    $this->data['meta']['pending'] = $jid;
     $this->save();
 
     if ($this->data['meta']['total'] && count($this->data['jobs']) === $this->data['meta']['total']) {
@@ -107,11 +102,12 @@ class JobGroup extends BaseModel
     $metaKey = $success ? 'success' : 'failed';
 
     // increment success/fail count
-    $newValue = $this->getMeta($metaKey) + 1;
-    $this->withMeta($metaKey, $newValue);
+    $value = $this->getMeta($metaKey);
+    $value[] = $job->id();
+    $this->withMeta($metaKey, $value);
 
-    $successfulJobs = $this->getMeta('success');
-    $failedJobs = $this->getMeta('failed');
+    $successfulJobs = count($this->getMeta('success'));
+    $failedJobs = count($this->getMeta('failed'));
     $totalJobs = $this->getMeta('total');
 
     if ($successfulJobs + $failedJobs === $totalJobs) {

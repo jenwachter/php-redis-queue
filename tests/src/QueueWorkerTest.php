@@ -527,8 +527,8 @@ class QueueWorkerTest extends Base
     $newGroup = (new JobGroup($this->predis, (int) $group->id()));
 
     $this->assertEquals(3, $newGroup->getMeta('total'));
-    $this->assertEquals(3, $newGroup->getMeta('success'));
-    $this->assertEquals(0, $newGroup->getMeta('failed'));
+    $this->assertEquals([1, 2, 3], $newGroup->getMeta('success'));
+    $this->assertEmpty($newGroup->getMeta('failed'));
     $this->assertTrue($newGroup->getMeta('complete'));
   }
 
@@ -563,8 +563,8 @@ class QueueWorkerTest extends Base
     // all jobs were successful
     $newGroup = (new JobGroup($this->predis, (int) $group->id()));
     $this->assertEquals(4, $newGroup->getMeta('total'));
-    $this->assertEquals(4, $newGroup->getMeta('success'));
-    $this->assertEquals(0, $newGroup->getMeta('failed'));
+    $this->assertEquals([1, 2, 3, 4], $newGroup->getMeta('success'));
+    $this->assertEmpty($newGroup->getMeta('failed'));
     $this->assertTrue($newGroup->getMeta('complete'));
   }
 
@@ -599,8 +599,8 @@ class QueueWorkerTest extends Base
     // all jobs were successful
     $newGroup = (new JobGroup($this->predis, (int) $group->id()));
     $this->assertEquals(4, $newGroup->getMeta('total'));
-    $this->assertEquals(2, $newGroup->getMeta('success'));
-    $this->assertEquals(2, $newGroup->getMeta('failed'));
+    $this->assertEquals([2, 4], $newGroup->getMeta('success'));
+    $this->assertEquals([1, 3], $newGroup->getMeta('failed'));
     $this->assertTrue($newGroup->getMeta('complete'));
   }
 }
