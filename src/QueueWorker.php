@@ -103,7 +103,7 @@ class QueueWorker
 
       $this->redis->lpush($this->queue->processing, $id);
 
-      $jobName = $job->jobName();
+      $jobName = $job->get('jobName');
 
       if (!isset($this->callbacks[$jobName])) {
         $queueName = $this->queue->name;
@@ -162,7 +162,7 @@ class QueueWorker
       $job->withMeta('context', $context)->save();
     }
 
-    if ($groupId = $job->group()) {
+    if ($groupId = $job->get('group')) {
       $group = new JobGroup($this->redis, $groupId);
       $group = $group->onJobComplete($job, $status === 'success');
 
@@ -171,7 +171,7 @@ class QueueWorker
       }
     }
 
-    $this->hook($job->jobName() . '_after', $job->get(), $status === 'success');
+    $this->hook($job->get('jobName') . '_after', $job->get(), $status === 'success');
 
     // if ($status === 'success' && $job['meta']['original']) {
     //   // remove the old job from the failed queue

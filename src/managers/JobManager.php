@@ -37,7 +37,7 @@ class JobManager extends BaseManager
   public function addJobToQueue(Job $job, bool $front = false): bool
   {
     $method = $front ? 'lpush' : 'rpush';
-    $queue = new Queue($job->queue());
+    $queue = new Queue($job->get('queue'));
 
     $length = $this->redis->llen($queue->pending);
     $newLength = $this->redis->$method($queue->pending, $job->id());
@@ -74,13 +74,13 @@ class JobManager extends BaseManager
       throw new \Exception("Job #$jobId not found. Cannot rerun.");
     }
 
-    if ($job->status() !== 'failed') {
+    if ($job->get('status') !== 'failed') {
       throw new \Exception("Job #$jobId did not fail. Cannot rerun.");
     }
 
     $job->withRerun()->save();
 
-    $queue = new Queue($job->queue());
+    $queue = new Queue($job->get('queue'));
 
     // remove from failed list
     $this->redis->lrem($queue->failed, -1, $job->id());
