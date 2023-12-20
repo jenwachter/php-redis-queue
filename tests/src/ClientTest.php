@@ -239,4 +239,82 @@ class ClientTest extends Base
     $newGroup = (new JobGroup($this->predis, (int) $group->id()));
     $this->assertEquals(3, $newGroup->get('total'));
   }
+
+  public function testReruntestJobGroup__rerunFailedJob()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $client = new ClientMock($this->predis);
+
+    // create group
+    $group = $client->createJobGroup(3);
+
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['callback', 'group_after'])
+      ->getMock();
+
+    $mock->expects($this->exactly(4))
+      ->method('callback')
+      ->with([])
+      ->will($this->onConsecutiveCalls(
+        true,
+        $this->throwException(new \Exception('Job failed', 123)),
+        true,
+        true // rerun of job #2
+      ));
+
+    $mock->expects($this->exactly(2))
+      ->method('group_after')
+      ->willReturnCallback(fn (string $key, string $value) => match ($mock->numberOfInvocations()) {
+        1 => [$group, false],
+        2 => [$group, true],
+      });
+
+    // add callbacks
+    $worker->addCallback('default', [$mock, 'callback']);
+    $worker->addCallback('group_after', [$mock, 'group_after']);
+
+    // push three jobs to the queue
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    // set the worker to work
+    $worker->work(false);
+
+    // asset job 2 failed and others succeeded
+    $this->assertEquals('success', (new Job($this->predis, 1))->get('status'));
+    $this->assertEquals('failed', (new Job($this->predis, 2))->get('status'));
+    $this->assertEquals('success', (new Job($this->predis, 3))->get('status'));
+
+    // get updated group
+    $updatedGroup = (new JobGroup($this->predis, 1));
+
+    $this->assertEmpty($updatedGroup->get('pending'));
+    $this->assertEquals($updatedGroup->get('success'), [1, 3]);
+    $this->assertEquals($updatedGroup->get('failed'), [2]);
+
+    // rerun job #2
+    $client->rerun(2);
+
+    $updatedGroup = (new JobGroup($this->predis, 1));
+
+    $this->assertEquals($updatedGroup->get('pending'), [2]);
+    $this->assertEquals($updatedGroup->get('success'), [1, 3]);
+    $this->assertEmpty($updatedGroup->get('failed'));
+
+    // set the worker to work
+    $worker->work(false);
+
+    // get updated group
+    $updatedGroup = (new JobGroup($this->predis, 1));
+
+    $this->assertEmpty($updatedGroup->get('pending'));
+    $this->assertEquals($updatedGroup->get('success'), [1, 3, 2]);
+    $this->assertEmpty($updatedGroup->get('failed'));
+
+    $job = (new Job($this->predis, 2));
+    $this->assertEquals('success', $job->get('status'));
+    $this->assertEquals(1, count($job->get('runs')));
+  }
 }

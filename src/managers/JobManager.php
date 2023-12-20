@@ -3,6 +3,7 @@
 namespace PhpRedisQueue\managers;
 
 use PhpRedisQueue\models\Job;
+use PhpRedisQueue\models\JobGroup;
 use PhpRedisQueue\models\Queue;
 
 class JobManager extends BaseManager
@@ -76,6 +77,11 @@ class JobManager extends BaseManager
 
     if ($job->get('status') !== 'failed') {
       throw new \Exception("Job #$jobId did not fail. Cannot rerun.");
+    }
+
+    if ($job->get('group') !== null) {
+      $group = new JobGroup($this->redis, $job->get('group'));
+      $group->rerunJob($jobId);
     }
 
     $job->withRerun()->save();

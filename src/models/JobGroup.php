@@ -108,7 +108,7 @@ class JobGroup extends BaseModel
   {
     $metaKey = $success ? 'success' : 'failed';
 
-    // increment success/fail count
+    // add to success/failed
     $value = $this->get($metaKey);
     $value[] = $job->id();
     $this->withMeta($metaKey, $value);
@@ -154,5 +154,23 @@ class JobGroup extends BaseModel
     }
 
     return $this->data['userSupplied'];
+  }
+
+  public function rerunJob(int $jobId)
+  {
+    // remove from failed
+    $failed = $this->get('failed');
+    $key = array_search($jobId, $failed);
+    if ($key !== false) {
+      unset($failed[$key]);
+    }
+    $this->withMeta('failed', $failed);
+
+    // add to pending
+    $pending = $this->get('pending');
+    $pending[] = $jobId;
+    $this->withMeta('pending', $pending);
+
+    return $this->save();
   }
 }
