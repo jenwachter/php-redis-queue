@@ -30,6 +30,7 @@ class JobGroup extends BaseModel
       'pending' => [],
       'success' => [],
       'failed' => [],
+      'userSupplied' => [],
     ]);
   }
 
@@ -140,5 +141,18 @@ class JobGroup extends BaseModel
     return array_map(function ($jobId) {
       return json_decode($this->redis->get('php-redis-queue:jobs:'. $jobId));
     }, $jobs);
+  }
+
+  /**
+   * @param string|null $key
+   * @return mixed
+   */
+  public function getUserData(string|null $key = null): mixed
+  {
+    if ($key) {
+      return $this->data['userSupplied'][$key] ?? null;
+    }
+
+    return $this->data['userSupplied'];
   }
 }
