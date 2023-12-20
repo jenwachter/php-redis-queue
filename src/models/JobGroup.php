@@ -132,4 +132,13 @@ class JobGroup extends BaseModel
     $this->save();
     return $this;
   }
+
+  public function getJobs(string $which)
+  {
+    $jobs = $this->get($which);
+
+    return array_map(function ($jobId) {
+      return json_decode($this->redis->get('php-redis-queue:jobs:'. $jobId));
+    }, $jobs);
+  }
 }
