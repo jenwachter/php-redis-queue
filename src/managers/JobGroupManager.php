@@ -18,4 +18,13 @@ class JobGroupManager extends BaseManager
 
     return $group;
   }
+
+  /**
+   * Get a job group by ID
+   * @return array
+   */
+  public function getJobGroup($id)
+  {
+    return (new JobGroup($this->redis, (int) $id));
+  }
 }
