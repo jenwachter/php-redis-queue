@@ -11,9 +11,9 @@ $redis = new \Predis\Client();
 $jobManager = new \PhpRedisQueue\managers\JobManager($redis);
 $queueManager = new \PhpRedisQueue\managers\QueueManager($redis);
 
-// list commands
-$app->add(new \PhpRedisQueue\cli\commands\ListCommands\JobsCommand($queueManager));
-$app->add(new \PhpRedisQueue\cli\commands\ListCommands\QueuesCommand($queueManager));
+// queue commands
+$app->add(new \PhpRedisQueue\cli\commands\QueueCommands\InfoCommand($queueManager));
+$app->add(new \PhpRedisQueue\cli\commands\QueueCommands\ListCommand($queueManager));
 
 // job commands
 $app->add(new \PhpRedisQueue\cli\commands\JobCommands\InfoCommand($jobManager));

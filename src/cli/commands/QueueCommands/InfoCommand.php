@@ -1,7 +1,7 @@
 <?php
 
 
-namespace PhpRedisQueue\cli\commands\ListCommands;
+namespace PhpRedisQueue\cli\commands\QueueCommands;
 
 use PhpRedisQueue\cli\commands\Command;
 use PhpRedisQueue\models\Queue;
@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class JobsCommand extends Command
+class InfoCommand extends Command
 {
   protected array $validStatuses = [
     'pending',
@@ -28,7 +28,7 @@ class JobsCommand extends Command
   protected function configure()
   {
     $this
-      ->setName('list:jobs')
+      ->setName('queues:info')
       ->setDescription('List jobs associated with a given queue. Lists pending jobs by default.')
       ->addArgument(
         'queuename',
@@ -46,18 +46,14 @@ class JobsCommand extends Command
   protected function execute(InputInterface $input, OutputInterface $output)
   {
     $queueName = $input->getArgument('queuename');
-    $queue = new Queue($queueName);
+    $queue = $this->queueManager->getQueue($queueName);
 
     $status = $input->getArgument('status');
     if (!$this->validateStatus($status, $output)) {
       return Command::FAILURE;
     }
 
-    $methodName = 'get' . ucfirst($status) . 'Jobs';
-    if ($status === 'success') {
-      $methodName = 'getSuccessfulJobs';
-    }
-    $jobs = $this->queueManager->$methodName($queue);
+    $jobs = $queue->getJobs($status);
 
     if (empty($jobs)) {
       $output->writeln('No jobs found.');
@@ -65,7 +61,7 @@ class JobsCommand extends Command
       $table = new Table($output);
       $table
         ->setHeaders(['ID', 'Datetime initialized', 'Job name'])
-        ->setRows(array_map(fn ($job) => [$job->meta->id, $job->meta->datetime, $job->meta->jobName], $jobs));
+        ->setRows(array_map(fn ($job) => [$job->id, $job->datetime, $job->jobName], $jobs));
 
       $table->render();
     }

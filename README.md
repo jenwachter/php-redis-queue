@@ -189,18 +189,6 @@ $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename', [
 
 ### Methods
 
-#### __`getJob(int $id)`__
-
-Get the data attached to a job.
-
-Note: job data expires when a job is trimmed from either the failed or success lists. You can set the length of these lists using the `processedListsLimit` configuration option on the Worker, which can be set per queue/worker.
-
-Returns: Array.
-
-Arguments:
-
-* `$id`: Required. ID of job.
-
 #### __`push(string $queue, string $jobName = 'default', array $jobData = [])`__
 
 Pushes a job to the end of a queue.
