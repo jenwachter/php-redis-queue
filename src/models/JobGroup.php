@@ -50,8 +50,10 @@ class JobGroup extends BaseModel
 
     // add job to the group and save
     $jid = $job->id();
-    $this->data['jobs'][] = $jid;
-    $this->withMeta('pending', $jid);
+
+    $jobs = $this->get('jobs');
+    $jobs[] = $jid;
+    $this->withMeta('jobs', $jobs);
     $this->save();
 
     $total = $this->get('total');
