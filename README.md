@@ -231,16 +231,16 @@ Access the CLI tool by running:
 ./vendor/bin/prq
 ```
 
-#### List commands
+#### Queue commands
 
-##### __`prq list:queues`__
+##### __`prq queues:list`__
 
 Get information about all queues. Queues are discovered by looking up active workers and examining the lists of pending, successful, and failed jobs.
 
 Example output:
 
 ```bash
-$ ./vendor/bin/prq list:queues
+$ ./vendor/bin/prq queues:list
 +-------------------+----------------+--------------+-----------------+-------------+
 | Queue name        | Active workers | Pending jobs | Successful jobs | Failed jobs |
 +-------------------+----------------+--------------+-----------------+-------------+
@@ -249,7 +249,7 @@ $ ./vendor/bin/prq list:queues
 +-------------------+----------------+--------------+-----------------+-------------+
 ```
 
-##### __`prq list:jobs <queuename> <status>`__
+##### __`prq queues:info <queuename> <status>`__
 
 List jobs associated with the given queue.
 
@@ -261,7 +261,50 @@ Arguments:
 Example output:
 
 ```bash
-$ ./vendor/bin/prq list:jobs files_queue
+$ ./vendor/bin/prq queues:info files_queue
++----+----------------------+------------+
+| ID | Datetime initialized | Job name   |
++----+----------------------+------------+
+| 8  | 2023-09-21T10:38:34  | upload     |
+| 7  | 2023-09-21T10:37:45  | upload     |
+| 6  | 2023-09-21T10:36:02  | delete     |
+| 5  | 2023-09-21T10:35:53  | delete     |
+| 4  | 2023-09-21T10:35:09  | upload     |
+| 3  | 2023-09-21T10:34:21  | upload     |
+| 2  | 2023-09-21T10:32:03  | upload     |
+| 1  | 2023-09-21T10:29:46  | upload     |
++----+----------------------+------------+
+```
+
+#### Group commands
+
+##### __`prq group:info`__
+
+Get information about a group.
+
+Example output:
+
+```bash
+$ ./vendor/bin/prq group:info 1
+
++----------------------+------------+ Group #1 ----+-----------------+-------------+
+| Datetime initialized | Total jobs | Pending jobs | Successful jobs | Failed jobs |
++----------------------+------------+--------------+-----------------+-------------+
+| 2023-12-20T15:06:17  | 30         | 30           | 0               | 0           |
++----------------------+------------+--------------+-----------------+-------------+
+
+##### __`prq group:jobs <status>`__
+
+List jobs associated with the given group.
+
+Arguments:
+
+* `status`: Job status. Options: pending, success, or failed. Default: pending
+
+Example output:
+
+```bash
+$ ./vendor/bin/prq queues:info files_queue
 +----+----------------------+------------+
 | ID | Datetime initialized | Job name   |
 +----+----------------------+------------+

@@ -8,6 +8,7 @@ $app = new Application();
 
 $redis = new \Predis\Client();
 
+$groupManager = new \PhpRedisQueue\managers\JobGroupManager($redis);
 $jobManager = new \PhpRedisQueue\managers\JobManager($redis);
 $queueManager = new \PhpRedisQueue\managers\QueueManager($redis);
 
@@ -18,5 +19,9 @@ $app->add(new \PhpRedisQueue\cli\commands\QueueCommands\ListCommand($queueManage
 // job commands
 $app->add(new \PhpRedisQueue\cli\commands\JobCommands\InfoCommand($jobManager));
 $app->add(new \PhpRedisQueue\cli\commands\JobCommands\RerunCommand($jobManager, $queueManager));
+
+// group commands
+$app->add(new \PhpRedisQueue\cli\commands\GroupCommands\InfoCommand($groupManager));
+$app->add(new \PhpRedisQueue\cli\commands\GroupCommands\JobsCommand($groupManager));
 
 $app->run();
