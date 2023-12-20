@@ -39,6 +39,7 @@ When a client pushes a job into a queue, it waits in the queue until it reaches 
     1. If the callback does not throw an exception, it is considered successful. If the callback throws an exception, it is considered failed.
     1. The job is removed from the processing queue and added to either the failed or success list.
 1. Calls an _after_ callback for the job type, if defined.
+1. If the job is part of a group and all jobs within the group have completed, the worker calls the `group_after` callback, if defined.
 1. The queue moves on to the next job or waits until another is added.
 
 ## Quick example
@@ -134,10 +135,12 @@ $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename', [
 
 #### __`addCallback(string $name, callable $callable)`__
 
-Attaches a callback to a job. You can attach up to three callbacks per job. The format of the callback names is as follows:
-* `<jobName>`: runs the job
-* `<jobName>_before`: runs before the job begins
-* `<jobName>_after`: runs after the job is complete
+Attaches a callback to the worker. Available callbacks:
+
+* `<jobName>`: Runs the job. Example: `upload`
+* `<jobName>_before`: Runs before the job begins. Example: `upload_before`
+* `<jobName>_after`: Runs after the job is complete. Example: `upload_after`
+* `group_after`: Runs after a group of jobs have completed.
 
 Returns: Null.
 
@@ -145,13 +148,16 @@ Arguments:
 
 * `$name`: Name of a hook that corresponds to one of three stages of the job's processing. See above for the format.
 * `$callable`: Function to attach to the given hook. Arguments are as follows:
-  * `jobName(array $data)`
+  * `<jobName>(array $data)`
     * `$data`: Array of data passed to the job by the client
-  * `jobName_before(array $data)`
+  * `<jobName>_before(array $data)`
     * `$data`: Array of data passed to the job by the client
-  * `jobName_after(array $data, bool $success)`
+  * `<jobName>_after(array $data, bool $success)`
     * `$data`: Array of data passed to the job by the client. Exception data from failed jobs is available in `$data['context']`
     * `$success`: Job status; success (`true`) or failure (`false`)
+  * `group_after(JobGroup $group, bool $success)`
+    * `$group`: Job group model
+    * `$success`: Group status; all jobs in the group completed successfully (`true`) or one or more jobs in the group failed (`false`)
 
 #### __`work(bool $block = true)`__
 
@@ -232,6 +238,17 @@ Returns: Boolean. `true` if the job was successfully removed; otherwise, `false`
 Arguments:
 
 * `$id`: ID of job to remove.
+
+#### __`createJobGroup(int total = null, $data = [])`__
+
+Creates a job group, which allows you to link jobs together. Use the [`group_after`](#addcallbackstring-name-callable-callable) callback to perform work when all jobs in the group have completed.
+
+Returns: PhpRedisQueue\models\JobGroup object
+
+Arguments:
+
+* `$total`: Total number of jobs.
+* `$data`: array of data to store with the job group.
 
 
 ### CLI
