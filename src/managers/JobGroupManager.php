@@ -6,13 +6,15 @@ use PhpRedisQueue\models\JobGroup;
 
 class JobGroupManager extends BaseManager
 {
-  public function createJobGroup($total = null): JobGroup
+  public function createJobGroup($total = null, $data = []): JobGroup
   {
     $group = new JobGroup($this->redis);
 
     if (is_int($total)) {
       $group->withMeta('total', $total);
     }
+
+    $group->withMeta('userSupplied', $data);
 
     $group->save();
 

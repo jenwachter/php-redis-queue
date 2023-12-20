@@ -77,8 +77,8 @@ class Client
     return $this->jobManager->removeJobFromQueue($queue, $jobId);
   }
 
-  public function createJobGroup($total = null): models\JobGroup
+  public function createJobGroup($total = null, $data = []): models\JobGroup
   {
-    return $this->jobGroupManager->createJobGroup($total);
+    return $this->jobGroupManager->createJobGroup($total, $data);
   }
 }
