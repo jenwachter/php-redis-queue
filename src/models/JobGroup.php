@@ -54,6 +54,11 @@ class JobGroup extends BaseModel
     $jobs = $this->get('jobs');
     $jobs[] = $jid;
     $this->withMeta('jobs', $jobs);
+
+    $pending = $this->get('pending');
+    $pending[] = $jid;
+    $this->withMeta('pending', $pending);
+
     $this->save();
 
     $total = $this->get('total');
@@ -106,6 +111,14 @@ class JobGroup extends BaseModel
     $value = $this->get($metaKey);
     $value[] = $job->id();
     $this->withMeta($metaKey, $value);
+
+    // remove from pending
+    $pending = $this->get('pending');
+    $key = array_search($job->id(), $pending);
+    if ($key !== false) {
+      unset($pending[$key]);
+    }
+    $this->withMeta('pending', $pending);
 
     $successfulJobs = count($this->get('success'));
     $failedJobs = count($this->get('failed'));
