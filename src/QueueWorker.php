@@ -69,7 +69,7 @@ class QueueWorker
       unset($config['logger']);
     }
 
-    $this->queue = new Queue($queueName);
+    $this->queue = new Queue($this->redis, $queueName);
 
     $this->queueManager = new QueueManager($this->redis);
     $this->queueManager->registerQueue($this->queue);

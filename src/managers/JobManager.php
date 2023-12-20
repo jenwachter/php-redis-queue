@@ -37,7 +37,7 @@ class JobManager extends BaseManager
   public function addJobToQueue(Job $job, bool $front = false): bool
   {
     $method = $front ? 'lpush' : 'rpush';
-    $queue = new Queue($job->get('queue'));
+    $queue = new Queue($this->redis, $job->get('queue'));
 
     $length = $this->redis->llen($queue->pending);
     $newLength = $this->redis->$method($queue->pending, $job->id());
@@ -53,7 +53,7 @@ class JobManager extends BaseManager
    */
   public function removeJobFromQueue(string $queueName, int $jobId): bool
   {
-    $queue = new Queue($queueName);
+    $queue = new Queue($this->redis, $queueName);
 
     $result = $this->redis->lrem($queue->pending, -1, $jobId);
     return $result === 1;
@@ -80,7 +80,7 @@ class JobManager extends BaseManager
 
     $job->withRerun()->save();
 
-    $queue = new Queue($job->get('queue'));
+    $queue = new Queue($this->redis, $job->get('queue'));
 
     // remove from failed list
     $this->redis->lrem($queue->failed, -1, $job->id());

@@ -34,7 +34,7 @@ class Queue
    */
   public string $failed;
 
-  public function __construct(string $name)
+  public function __construct(protected \Predis\Client $redis, string $name)
   {
     $this->name = str_replace(':', '-', $name);
 
@@ -44,5 +44,14 @@ class Queue
     $this->processing = $base . ':processing';
     $this->success = $base . ':success';
     $this->failed = $base . ':failed';
+  }
+
+  public function getJobs(string $which, int $limit = 50)
+  {
+    $jobs = $this->redis->lrange($this->$which, 0, $limit);
+
+    return array_map(function ($jobId) {
+      return json_decode($this->redis->get('php-redis-queue:jobs:'. $jobId));
+    }, $jobs);
   }
 }

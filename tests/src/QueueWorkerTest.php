@@ -11,7 +11,7 @@ class QueueWorkerTest extends Base
   public function setUp(): void
   {
     parent::setUp();
-    $this->queue = new Queue('queuename');
+    $this->queue = new Queue($this->predis, 'queuename');
   }
 
   public function testWork__noCallback()

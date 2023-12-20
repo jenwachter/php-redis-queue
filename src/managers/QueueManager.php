@@ -83,28 +83,13 @@ class QueueManager extends BaseManager
     return $queues;
   }
 
-  public function getPendingJobs(Queue $queue, int $limit = 50)
+  /**
+   * Get a job by ID
+   * @return array
+   */
+  public function getQueue(string $name)
   {
-    return $this->getJobsInQueue($queue, 'pending', $limit);
-  }
-
-  public function getFailedJobs(Queue $queue, int $limit = 50)
-  {
-    return $this->getJobsInQueue($queue, 'failed', $limit);
-  }
-
-  public function getSuccessfulJobs(Queue $queue, int $limit = 50)
-  {
-    return $this->getJobsInQueue($queue, 'success', $limit);
-  }
-
-  protected function getJobsInQueue(Queue $queue, string $which, $limit)
-  {
-    $jobs = $this->redis->lrange($queue->$which, 0, $limit);
-
-    return array_map(function ($jobId) {
-      return json_decode($this->redis->get('php-redis-queue:jobs:'. $jobId));
-    }, $jobs);
+    return (new Queue($this->redis, $name));
   }
 
   public function registerQueue(Queue $queue)
