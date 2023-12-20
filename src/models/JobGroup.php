@@ -66,6 +66,12 @@ class JobGroup extends BaseModel
     return $job->id();
   }
 
+  public function setTotal(int $total)
+  {
+    $this->withMeta('total', $total);
+    return $this->save();
+  }
+
   /**
    * Add the group's jobs to the queue
    * @return bool
