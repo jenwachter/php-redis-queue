@@ -107,37 +107,45 @@ class ClientTest extends Base
 
   public function testRerun()
   {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $client = new ClientMock($this->predis);
 
-    // add original job to the system
-    $originalJob = $this->getJobData(
-      encode: false,
-      status: 'failed',
-      id: 15,
-      context: 'failure reason'
-    );
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['callback'])
+      ->getMock();
 
-    $this->predis->set('php-redis-queue:jobs:15', json_encode($originalJob));
-    $this->predis->lpush($this->queue->failed, 15);
+    $mock->expects($this->exactly(2))
+      ->method('callback')
+      ->with([])
+      ->will($this->onConsecutiveCalls(
+        $this->throwException(new \Exception('Job failed', 123)),
+        true // rerun
+      ));
 
-    // increment the ID to that of the failed job
-    $this->predis->incrby('php-redis-queue:meta:id', 15);
+    // add callback
+    $worker->addCallback('default', [$mock, 'callback']);
 
-    $client->rerun(15);
+    // push job to the queue
+    $client->push('queuename');
+
+    // set the worker to work
+    $worker->work(false);
+
+    // verify it failed
+    $this->assertEquals('failed', (new Job($this->predis, 1))->get('status'));
+
+    // rerun job
+    $client->rerun(1);
 
     // back in the pending queue
-    $this->assertEquals('15', $this->predis->lindex($this->queue->pending, 0));
-    $this->assertEquals($this->getJobData(
-      encode: false,
-      status: 'pending',
-      id: 15,
-      runs: [
-        array_diff_key($originalJob, array_flip(['runs']))
-      ]
-    ), $this->getJobById(15));
+    $this->assertEquals([1], $this->predis->lrange($this->queue->pending, 0, 1));
 
-    // out of the failed list
-    $this->assertEmpty($this->predis->lindex($this->queue->failed, 0));
+    // set the worker to work
+    $worker->work(false);
+
+    // verify it succeeded second time
+    $this->assertEquals('success', (new Job($this->predis, 1))->get('status'));
   }
 
   public function testRerun__missingJob(): void
