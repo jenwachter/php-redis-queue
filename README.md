@@ -127,8 +127,6 @@ $worker = new PhpRedisQueue\QueueWorker($predis, 'queuename', [
 
 * __default_socket_timeout__: timeout (in seconds) for the worker, if using the default blocking functionality. Default: -1 (no timeout)
 * __logger__: a logger that implements `Psr\Log\LoggerInterface`. Default: null
-* __failedListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 5000
-* __successListLimit__: limits the number of items in the failed job list. Pass -1 for no limit. Default: 1000
 * __wait__: number of seconds to wait in between job processing. Default: 1
 
 ### Methods
@@ -262,33 +260,32 @@ Access the CLI tool by running:
 
 ##### __`prq queues:list`__
 
-Get information about all queues. Queues are discovered by looking up active workers and examining the lists of pending, successful, and failed jobs.
+Get information about all queues. Queues are discovered by looking up active workers, examining the lists of pending and processing jobs, and the count of processed jobs.
 
 Example output:
 
 ```bash
 $ ./vendor/bin/prq queues:list
-+-------------------+----------------+--------------+-----------------+-------------+
-| Queue name        | Active workers | Pending jobs | Successful jobs | Failed jobs |
-+-------------------+----------------+--------------+-----------------+-------------+
-| files_queue       | 1              | 2            | 16              | 0           |
-| another_queue     | 0              | 10           | 3               | 2           |
-+-------------------+----------------+--------------+-----------------+-------------+
++-------------------+----------------+--------------+----------------+
+| Queue name        | Active workers | Pending jobs | Processed jobs |
++-------------------+----------------+--------------+----------------+
+| files_queue       | 1              | 2            | 16             |
+| another_queue     | 0              | 10           | 3              |
++-------------------+----------------+--------------+----------------+
 ```
 
-##### __`prq queues:info <queuename> <status>`__
+##### __`prq queues:jobs <queuename>`__
 
 List jobs associated with the given queue.
 
 Arguments:
 
 * `queuename`: Name of the queue.
-* `status`: Job status. Options: pending, processing, success, or failed. Default: pending
 
 Example output:
 
 ```bash
-$ ./vendor/bin/prq queues:info files_queue
+$ ./vendor/bin/prq queues:jobs files_queue
 +----+----------------------+------------+
 | ID | Datetime initialized | Job name   |
 +----+----------------------+------------+
@@ -305,9 +302,13 @@ $ ./vendor/bin/prq queues:info files_queue
 
 #### Group commands
 
-##### __`prq group:info`__
+##### __`prq group:info <id>`__
 
 Get information about a group.
+
+Arguments:
+
+* `id`: ID of the group.
 
 Example output:
 
@@ -320,30 +321,26 @@ $ ./vendor/bin/prq group:info 1
 | 2023-12-20T15:06:17  | 30         | 30           | 0               | 0           |
 +----------------------+------------+--------------+-----------------+-------------+
 
-##### __`prq group:jobs <status>`__
+##### __`prq group:jobs <id>`__
 
 List jobs associated with the given group.
 
 Arguments:
 
-* `status`: Job status. Options: pending, success, or failed. Default: pending
+* `id`: ID of the group.
 
 Example output:
 
 ```bash
-$ ./vendor/bin/prq queues:info files_queue
-+----+----------------------+------------+
-| ID | Datetime initialized | Job name   |
-+----+----------------------+------------+
-| 8  | 2023-09-21T10:38:34  | upload     |
-| 7  | 2023-09-21T10:37:45  | upload     |
-| 6  | 2023-09-21T10:36:02  | delete     |
-| 5  | 2023-09-21T10:35:53  | delete     |
-| 4  | 2023-09-21T10:35:09  | upload     |
-| 3  | 2023-09-21T10:34:21  | upload     |
-| 2  | 2023-09-21T10:32:03  | upload     |
-| 1  | 2023-09-21T10:29:46  | upload     |
-+----+----------------------+------------+
+$ ./vendor/bin/prq group:jobs files_queue
++-----+----------------------+----------+---------+
+| ID  | Datetime initialized | Job name | Status  |
++-----+----------------------+----------+---------+
+| 121 | 2023-12-20T16:13:06  | upload   | success |
+| 122 | 2023-12-20T16:13:06  | upload   | success |
+| 123 | 2023-12-20T16:13:06  | upload   | success |
+| 124 | 2023-12-20T16:13:06  | upload   | pending |
++-----+----------------------+----------+---------+
 ```
 
 #### Job commands

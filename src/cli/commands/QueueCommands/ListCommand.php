@@ -31,7 +31,7 @@ class ListCommand extends Command
     } else {
       $table = new Table($output);
       $table
-        ->setHeaders(['Queue name', 'Active workers', 'Pending jobs', 'Successful jobs', 'Failed jobs'])
+        ->setHeaders(['Queue name', 'Active workers', 'Pending jobs', 'Processed jobs'])
         ->setRows(array_map(fn ($row) => array_values($row), $queues));
 
       $table->render();

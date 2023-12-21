@@ -31,18 +31,6 @@ class QueueWorker
     'default_socket_timeout' => -1,
 
     /**
-     * Length limit for failed job list
-     * @var int
-     */
-    'failedListLimit' => 500,
-
-    /**
-     * Length limit for success job list
-     * @var int
-     */
-    'successListLimit' => 500,
-
-    /**
      * Number of seconds to wait between jobs
      * @var int
      */
@@ -71,10 +59,7 @@ class QueueWorker
 
     $this->config = array_merge($this->defaultConfig, $config);
 
-    $this->queue = new Queue($this->redis,$queueName, [
-      'successListLimit' => $this->config['successListLimit'],
-      'failedListLimit' => $this->config['failedListLimit']
-    ]);
+    $this->queue = new Queue($this->redis,$queueName);
 
     $this->queueManager = new QueueManager($this->redis);
     $this->queueManager->registerQueue($this->queue);
@@ -150,8 +135,7 @@ class QueueWorker
 
   protected function onJobCompletion(Job $job, string $status, $context = null)
   {
-    $this->queue->removeFromProcessing($job);
-    $this->queue->moveToStatusQueue($job, $status === 'success');
+    $this->queue->onJobCompletion($job);
 
     $job->withData('status', $status)->save();
 

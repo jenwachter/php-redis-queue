@@ -13,7 +13,7 @@ $jobManager = new \PhpRedisQueue\managers\JobManager($redis);
 $queueManager = new \PhpRedisQueue\managers\QueueManager($redis);
 
 // queue commands
-$app->add(new \PhpRedisQueue\cli\commands\QueueCommands\InfoCommand($queueManager));
+$app->add(new \PhpRedisQueue\cli\commands\QueueCommands\JobsCommand($queueManager));
 $app->add(new \PhpRedisQueue\cli\commands\QueueCommands\ListCommand($queueManager));
 
 // job commands

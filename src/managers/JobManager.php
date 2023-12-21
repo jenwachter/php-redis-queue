@@ -88,9 +88,6 @@ class JobManager extends BaseManager
 
     $queue = new Queue($this->redis, $job->get('queue'));
 
-    // remove from failed list
-    $this->redis->lrem($queue->failed, -1, $job->id());
-
     return $this->addJobToQueue($job, $front);
   }
 }

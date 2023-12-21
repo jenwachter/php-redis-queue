@@ -23,49 +23,20 @@ class Queue
   public string $processing;
 
   /**
-   * Name of list that contains jobs that ran succesfully
+   * Name of varible that keeps track of how many jobs have processed in this queue
    * @var string
    */
-  public string $success;
+  public string $processed;
 
-  /**
-   * Name of list that contains jobs that failed
-   * @var string
-   */
-  public string $failed;
-
-  /**
-   * Default configuration that is merged with configuration passed in constructor
-   * @var array
-   */
-  protected array $defaultConfig = [
-    /**
-     * Length limit for failed job list
-     * @var int
-     */
-    'failedListLimit' => 500,
-
-    /**
-     * Length limit for success job list
-     * @var int
-     */
-    'successListLimit' => 500,
-  ];
-
-  protected array $config = [];
-
-  public function __construct(protected \Predis\Client $redis, string $name, array $config = [])
+  public function __construct(protected \Predis\Client $redis, string $name)
   {
     $this->name = str_replace(':', '-', $name);
-
-    $this->config = array_merge($this->defaultConfig, $config);
 
     $base = 'php-redis-queue:client:' . $this->name;
 
     $this->pending = $base . ':pending';
     $this->processing = $base . ':processing';
-    $this->success = $base . ':success';
-    $this->failed = $base . ':failed';
+    $this->processed = $base . ':processed';
   }
 
   public function getJobs(string $which, int $limit = 50)
@@ -102,47 +73,12 @@ class Queue
   }
 
   /**
-   * Move a job to a status queue (success or failed)
-   * @param Job $job      Job
-   * @param bool $success Success (true) or failed (false)
-   * @return void
+   * Increments the number of jobs processed in this queue (success or fail)
+   * @return int
    */
-  public function moveToStatusQueue(Job $job, bool $success, $resolvedGroup = false)
+  public function onJobCompletion(Job $job)
   {
-    if ($job->get('group') !== null && !$resolvedGroup) {
-      // don't add jobs thar are part of a group to the status queue yet
-      // only done when a group is resolved
-      return;
-    }
-
-    $list = $success ? $this->success : $this->failed;
-    $this->redis->lpush($list, $job->id());
-
-    $this->trimList($list);
-  }
-
-  public function trimList(string $list)
-  {
-    $limit = $list === $this->success ? 'successListLimit' : 'failedListLimit';
-    $limit = $this->config[$limit];
-
-    if ($limit === -1) {
-      return;
-    }
-
-    $length = $this->redis->llen($list);
-
-    if ($length > $limit) {
-
-      // get the IDs we're going to remove
-      $ids = $this->redis->lrange($list,  $limit, $length);
-
-      // trim list
-      $this->redis->ltrim($list, 0, $limit - 1);
-
-      // remove jobs
-      $ids = array_map(fn ($id) => "php-redis-queue:jobs:$id", $ids);
-      $this->redis->del($ids);
-    }
+    $this->removeFromProcessing($job);
+    return $this->redis->incr($this->processed);
   }
 }

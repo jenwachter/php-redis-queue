@@ -141,9 +141,9 @@ class JobGroup extends BaseModel
     return $this;
   }
 
-  public function getJobs(string $which)
+  public function getJobs()
   {
-    $jobs = $this->get($which);
+    $jobs = $this->get('jobs');
 
     return array_map(function ($jobId) {
       return json_decode($this->redis->get('php-redis-queue:jobs:'. $jobId));
@@ -198,19 +198,19 @@ class JobGroup extends BaseModel
    */
   public function resolve()
   {
-    // to avoide creating more Queue objects than necessary
-    $queues = [];
-
-    foreach ($this->get('jobs') as $id) {
-      $job = new Job($this->redis, $id);
-      $queueName = $job->get('queue');
-
-      if (!isset($queues[$queueName])) {
-        $queues[$queueName] = new Queue($this->redis, $job->get('queue'));
-      }
-
-      $queue = $queues[$queueName];
-      $queue->moveToStatusQueue($job, $job->get('status') === 'success', true);
-    }
+    // // to avoide creating more Queue objects than necessary
+    // $queues = [];
+    //
+    // foreach ($this->get('jobs') as $id) {
+    //   $job = new Job($this->redis, $id);
+    //   $queueName = $job->get('queue');
+    //
+    //   if (!isset($queues[$queueName])) {
+    //     $queues[$queueName] = new Queue($this->redis, $job->get('queue'));
+    //   }
+    //
+    //   $queue = $queues[$queueName];
+    //   $queue->moveToStatusQueue($job, $job->get('status') === 'success', true);
+    // }
   }
 }
