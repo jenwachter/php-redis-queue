@@ -69,12 +69,15 @@ class QueueWorker
       unset($config['logger']);
     }
 
-    $this->queue = new Queue($this->redis, $queueName);
+    $this->config = array_merge($this->defaultConfig, $config);
+
+    $this->queue = new Queue($this->redis,$queueName, [
+      'successListLimit' => $this->config['successListLimit'],
+      'failedListLimit' => $this->config['failedListLimit']
+    ]);
 
     $this->queueManager = new QueueManager($this->redis);
     $this->queueManager->registerQueue($this->queue);
-
-    $this->config = array_merge($this->defaultConfig, $config);
   }
 
    /**
@@ -92,7 +95,7 @@ class QueueWorker
       $this->redis->lpush($this->queue->pending, $id);
     }
 
-    while($id = $this->checkQueue($block)) {
+    while($id = $this->queue->check($block)) {
 
       $id = is_array($id) ?
         $id[1] : // blpop
@@ -124,7 +127,10 @@ class QueueWorker
         $this->onJobCompletion($job, 'failed', $context);
       }
 
-      sleep($this->config['wait']);
+      // // for testing -- only one job runs at a time
+      // die();
+
+      // sleep($this->config['wait']);
     }
   }
 
@@ -142,19 +148,10 @@ class QueueWorker
     $this->callbacks[$name] = $callable;
   }
 
-  protected function checkQueue(bool $block = true)
-  {
-    if ($block) {
-      return $this->redis->blpop($this->queue->pending, 0);
-    }
-
-    return $this->redis->lpop($this->queue->pending);
-  }
-
   protected function onJobCompletion(Job $job, string $status, $context = null)
   {
-    $this->removeFromProcessing($job);
-    $this->moveToStatusQueue($job, $status === 'success');
+    $this->queue->removeFromProcessing($job);
+    $this->queue->moveToStatusQueue($job, $status === 'success');
 
     $job->withMeta('status', $status)->save();
 
@@ -172,55 +169,6 @@ class QueueWorker
     }
 
     $this->hook($job->get('jobName') . '_after', $job->get(), $status === 'success');
-  }
-
-  /**
-   * Remove a job from the processing queue
-   * @param array $job Job data
-   * @return int
-   */
-  protected function removeFromProcessing(Job $job): int
-  {
-    return $this->redis->lrem($this->queue->processing, -1, $job->id());
-  }
-
-  /**
-   * Move a job to a status queue (success or failed)
-   * @param Job $job      Job
-   * @param bool $success Success (true) or failed (false)
-   * @return void
-   */
-  protected function moveToStatusQueue(Job $job, bool $success)
-  {
-    $list = $success ? $this->queue->success : $this->queue->failed;
-    $this->redis->lpush($list, $job->id());
-
-    $this->trimList($list);
-  }
-
-  protected function trimList(string $list)
-  {
-    $limit = $list === $this->queue->success ? 'successListLimit' : 'failedListLimit';
-    $limit = $this->config[$limit];
-
-    if ($limit === -1) {
-      return;
-    }
-
-    $length = $this->redis->llen($list);
-
-    if ($length > $limit) {
-
-      // get the IDs we're going to remove
-      $ids = $this->redis->lrange($list,  $limit, $length);
-
-      // trim list
-      $this->redis->ltrim($list, 0, $limit - 1);
-
-      // remove jobs
-      $ids = array_map(fn ($id) => "php-redis-queue:jobs:$id", $ids);
-      $this->redis->del($ids);
-    }
   }
 
   protected function getExceptionData(\Throwable $e)
