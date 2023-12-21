@@ -107,8 +107,14 @@ class Queue
    * @param bool $success Success (true) or failed (false)
    * @return void
    */
-  public function moveToStatusQueue(Job $job, bool $success)
+  public function moveToStatusQueue(Job $job, bool $success, $resolvedGroup = false)
   {
+    if ($job->get('group') !== null && !$resolvedGroup) {
+      // don't add jobs thar are part of a group to the status queue yet
+      // only done when a group is resolved
+      return;
+    }
+
     $list = $success ? $this->success : $this->failed;
     $this->redis->lpush($list, $job->id());
 

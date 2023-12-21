@@ -287,6 +287,17 @@ class ClientTest extends Base
     $this->assertEquals('failed', (new Job($this->predis, 2))->get('status'));
     $this->assertEquals('success', (new Job($this->predis, 3))->get('status'));
 
+    // processing queue is empty (jobs already processed)
+    $this->assertEquals(0, $this->predis->llen($this->queue->processing));
+
+    // group is not resolved, so jobs are not in the lists
+
+    // job is in the failed queue
+    $this->assertEquals(0, $this->predis->llen($this->queue->failed));
+
+    // success queue is empty
+    $this->assertEquals(0, $this->predis->llen($this->queue->success));
+
     // get updated group
     $updatedGroup = (new JobGroup($this->predis, 1));
 
@@ -316,5 +327,74 @@ class ClientTest extends Base
     $job = (new Job($this->predis, 2));
     $this->assertEquals('success', $job->get('status'));
     $this->assertEquals(1, count($job->get('runs')));
+
+    // group is resolved, so jobs are in the lists
+
+    $this->assertEquals(0, $this->predis->llen($this->queue->failed));
+    $this->assertEquals(3, $this->predis->llen($this->queue->success));
+  }
+
+  public function testReruntestJobGroup__resolveFailedGroup()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $client = new ClientMock($this->predis);
+
+    // create group
+    $group = $client->createJobGroup(3);
+
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['callback', 'group_after'])
+      ->getMock();
+
+    $mock->expects($this->exactly(3))
+      ->method('callback')
+      ->with([])
+      ->will($this->onConsecutiveCalls(
+        true,
+        $this->throwException(new \Exception('Job failed', 123)),
+        true
+      ));
+
+    // add callback
+    $worker->addCallback('default', [$mock, 'callback']);
+
+    // push three jobs to the queue
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    // set the worker to work
+    $worker->work(false);
+
+    // asset job 2 failed and others succeeded
+    $this->assertEquals('success', (new Job($this->predis, 1))->get('status'));
+    $this->assertEquals('failed', (new Job($this->predis, 2))->get('status'));
+    $this->assertEquals('success', (new Job($this->predis, 3))->get('status'));
+
+    // processing queue is empty (jobs already processed)
+    $this->assertEquals(0, $this->predis->llen($this->queue->processing));
+
+    // group is not resolved, so jobs are not in the lists
+
+    // job is in the failed queue
+    $this->assertEquals(0, $this->predis->llen($this->queue->failed));
+
+    // success queue is empty
+    $this->assertEquals(0, $this->predis->llen($this->queue->success));
+
+    // get updated group
+    $updatedGroup = (new JobGroup($this->predis, 1));
+
+    $this->assertEmpty($updatedGroup->get('pending'));
+    $this->assertEquals($updatedGroup->get('success'), [1, 3]);
+    $this->assertEquals($updatedGroup->get('failed'), [2]);
+
+    // resolve manually, eevn though there is a failed jobs still
+    $updatedGroup->resolve();
+
+    // group is resolved, so jobs are in the lists
+    $this->assertEquals(1, $this->predis->llen($this->queue->failed));
+    $this->assertEquals(2, $this->predis->llen($this->queue->success));
   }
 }

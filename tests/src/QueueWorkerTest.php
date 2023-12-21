@@ -511,7 +511,31 @@ class QueueWorkerTest extends Base
     $this->assertEmpty($this->predis->get('php-redis-queue:jobs:1'));
   }
 
-  public function testsWork__jobGroup__autoQueue()
+  public function testsWork__jobGroup__autoQueue__setTotalOnInit()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $worker->addCallback('default', function () {});
+
+    $client = new ClientMock($this->predis);
+
+    $group = $client->createJobGroup();
+    $group->setTotal(3);
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    $worker->work(false);
+
+    // make sure all jobs were successful
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+
+    $this->assertEquals(3, $newGroup->get('total'));
+    $this->assertEquals([1, 2, 3], $newGroup->get('success'));
+    $this->assertEmpty($newGroup->get('failed'));
+    $this->assertTrue($newGroup->get('complete'));
+  }
+
+  public function testsWork__jobGroup__autoQueue__setTotalAfterInit()
   {
     $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $worker->addCallback('default', function () {});
@@ -598,7 +622,6 @@ class QueueWorkerTest extends Base
 
     $worker->work(false);
 
-    // all jobs were successful
     $newGroup = (new JobGroup($this->predis, (int) $group->id()));
     $this->assertEquals(4, $newGroup->get('total'));
     $this->assertEquals([2, 4], $newGroup->get('success'));
