@@ -11,10 +11,10 @@ class JobGroupManager extends BaseManager
     $group = new JobGroup($this->redis);
 
     if (is_int($total)) {
-      $group->withMeta('total', $total);
+      $group->withData('total', $total);
     }
 
-    $group->withMeta('userSupplied', $data);
+    $group->withData('userSupplied', $data);
 
     $group->save();
 

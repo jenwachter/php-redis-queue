@@ -31,10 +31,10 @@ class Job extends BaseModel
     array_unshift($this->data['runs'], $rerunData);
 
     // update datetime
-    $this->withMeta('datetime', $this->getDatetime());
+    $this->withData('datetime', $this->getDatetime());
 
     // update status
-    $this->withMeta('status', 'pending');
+    $this->withData('status', 'pending');
 
     // remove context
     $this->withoutMeta('context');

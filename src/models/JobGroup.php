@@ -54,11 +54,11 @@ class JobGroup extends BaseModel
 
     $jobs = $this->get('jobs');
     $jobs[] = $jid;
-    $this->withMeta('jobs', $jobs);
+    $this->withData('jobs', $jobs);
 
     $pending = $this->get('pending');
     $pending[] = $jid;
-    $this->withMeta('pending', $pending);
+    $this->withData('pending', $pending);
 
     $this->save();
 
@@ -74,7 +74,7 @@ class JobGroup extends BaseModel
 
   public function setTotal(int $total)
   {
-    $this->withMeta('total', $total);
+    $this->withData('total', $total);
     return $this->save();
   }
 
@@ -91,7 +91,7 @@ class JobGroup extends BaseModel
 
     if (!$this->get('total')) {
       // add total, if there isn't one yet
-      $this->withMeta('total', count($this->get('jobs')))->save();
+      $this->withData('total', count($this->get('jobs')))->save();
     }
 
     foreach ($this->get('jobs') as $id) {
@@ -99,7 +99,7 @@ class JobGroup extends BaseModel
       $this->addJobToQueue($job);
     }
 
-    $this->withMeta('queued', true)->save();
+    $this->withData('queued', true)->save();
 
     return true;
   }
@@ -111,7 +111,7 @@ class JobGroup extends BaseModel
     // add to success/failed
     $value = $this->get($metaKey);
     $value[] = $job->id();
-    $this->withMeta($metaKey, $value);
+    $this->withData($metaKey, $value);
 
     // remove from pending
     $pending = $this->get('pending');
@@ -119,7 +119,7 @@ class JobGroup extends BaseModel
     if ($key !== false) {
       unset($pending[$key]);
     }
-    $this->withMeta('pending', $pending);
+    $this->withData('pending', $pending);
 
     $successfulJobs = count($this->get('success'));
     $failedJobs = count($this->get('failed'));
@@ -127,7 +127,7 @@ class JobGroup extends BaseModel
 
     if ($successfulJobs + $failedJobs === $totalJobs) {
       // all jobs have run
-      $this->withMeta('complete', true);
+      $this->withData('complete', true);
     }
 
     $this->save();
@@ -164,12 +164,12 @@ class JobGroup extends BaseModel
     if ($key !== false) {
       unset($failed[$key]);
     }
-    $this->withMeta('failed', $failed);
+    $this->withData('failed', $failed);
 
     // add to pending
     $pending = $this->get('pending');
     $pending[] = $jobId;
-    $this->withMeta('pending', $pending);
+    $this->withData('pending', $pending);
 
     return $this->save();
   }

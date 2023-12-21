@@ -98,7 +98,7 @@ class BaseModel
    * @param mixed $withValue Value
    * @return $this
    */
-  public function withMeta(string $with, mixed $withValue)
+  public function withData(string $with, mixed $withValue)
   {
     $this->data[$with] = $withValue;
 

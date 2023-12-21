@@ -26,7 +26,7 @@ trait CanCreateJobs
   {
     $job = $this->jobManager->createJob($queue, $jobName, $jobData, $group);
 
-    $job->withMeta('status', 'pending')->save();
+    $job->withData('status', 'pending')->save();
 
     return $job;
   }

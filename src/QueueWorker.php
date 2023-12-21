@@ -102,7 +102,7 @@ class QueueWorker
         $id;     // lpop
 
       $job = new Job($this->redis, (int) $id);
-      $job->withMeta('status', 'processing')->save();
+      $job->withData('status', 'processing')->save();
 
       $this->redis->lpush($this->queue->processing, $id);
 
@@ -153,10 +153,10 @@ class QueueWorker
     $this->queue->removeFromProcessing($job);
     $this->queue->moveToStatusQueue($job, $status === 'success');
 
-    $job->withMeta('status', $status)->save();
+    $job->withData('status', $status)->save();
 
     if ($context) {
-      $job->withMeta('context', $context)->save();
+      $job->withData('context', $context)->save();
     }
 
     if ($groupId = $job->get('group')) {
