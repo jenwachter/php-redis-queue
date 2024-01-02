@@ -132,6 +132,14 @@ class JobGroup extends BaseModel
       // expire in a week if failed
       $success = $successfulJobs === $totalJobs;
       $this->resolve($success);
+
+      if (!$success) {
+        $this->log('warning', 'Job group failed', [
+          'context' => [
+            'group' => $this->get()
+          ]
+        ]);
+      }
     }
 
     $this->save();

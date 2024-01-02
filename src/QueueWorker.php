@@ -96,7 +96,11 @@ class QueueWorker
       if (!isset($this->callbacks[$jobName])) {
         $queueName = $this->queue->name;
         $message = "No callback set for `$jobName` job in $queueName queue.";
-        $this->log('warning', $message, ['context' => $job->get()]);
+        $this->log('warning', $message, [
+          'context' => [
+            'job' => $job->get()
+          ]
+        ]);
         $this->onJobCompletion($job, 'failed', $message);
         continue;
       }
@@ -152,6 +156,14 @@ class QueueWorker
       if ($group->get('complete')) {
         $this->hook('group_after', $group, count($group->get('failed')) === 0);
       }
+    }
+
+    if ($status !== 'success') {
+      $this->log('warning', 'Job failed', [
+        'context' => [
+          'job' => $job->get(),
+        ]
+      ]);
     }
 
     if (!$job->get('group')) {
