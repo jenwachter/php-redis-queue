@@ -64,7 +64,6 @@ class QueueManager extends BaseManager
         preg_match("/php-redis-queue:client:([^:]+):$which/", $keyName, $match);
 
         if (!isset($match[1])) {
-          var_dump("NO MATCH: " . $which);
           continue;
         }
 
