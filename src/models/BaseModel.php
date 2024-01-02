@@ -122,11 +122,22 @@ class BaseModel
   }
 
   /**
+   * Set the key to expire.
+   * Default TTL is 24 hours
+   * @param $ttl
+   * @return mixed
+   */
+  public function expire($ttl = 86400)
+  {
+    return $this->redis->expire($this->key(), $ttl);
+  }
+
+  /**
    * Get the key this job is/will be stored at
    * @param int|null $id
    * @return string
    */
-  protected function key(int|null $id = null): string
+  public function key(int|null $id = null): string
   {
     $id = $id ?? $this->id();
     return "php-redis-queue:$this->keyGroup:$id";

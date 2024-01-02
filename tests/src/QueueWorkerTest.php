@@ -8,6 +8,11 @@ use PhpRedisQueue\models\Queue;
 
 class QueueWorkerTest extends Base
 {
+  protected $ttl = [
+    'success' => 60 * 60 * 24,
+    'failed' => 60 * 60 * 24 * 7,
+  ];
+
   public function setUp(): void
   {
     parent::setUp();
@@ -32,6 +37,9 @@ class QueueWorkerTest extends Base
 
     // job data is saved
     $this->assertEquals($this->getJobData(context: 'No callback set for `default` job in queuename queue.', status: 'failed'), $this->predis->get('php-redis-queue:jobs:1'));
+
+    // ttl is set
+    $this->assertLessThanOrEqual($this->ttl['failed'], $this->predis->ttl('php-redis-queue:jobs:1'));
   }
 
   /**
@@ -97,8 +105,11 @@ class QueueWorkerTest extends Base
 
     // job data is saved
     $this->assertEquals($this->getJobData(status: 'success'), $this->predis->get('php-redis-queue:jobs:1'));
-
     $this->assertEquals($this->getJobData(id: 2, status: 'success'), $this->predis->get('php-redis-queue:jobs:2'));
+
+    // ttls are set
+    $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:1'));
+    $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:2'));
   }
 
   /**
@@ -177,6 +188,9 @@ class QueueWorkerTest extends Base
       status: 'success',
       context: 'something returned from callback'
     ), $this->predis->get('php-redis-queue:jobs:1'));
+
+    // ttl is set
+    $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:1'));
   }
 
   /**
@@ -244,6 +258,9 @@ class QueueWorkerTest extends Base
         'exception_message' => 'Job failed'
       ]
     ), $this->predis->get('php-redis-queue:jobs:1'));
+
+    // ttl is set
+    $this->assertLessThanOrEqual($this->ttl['failed'], $this->predis->ttl('php-redis-queue:jobs:1'));
   }
 
   /**
@@ -288,5 +305,11 @@ class QueueWorkerTest extends Base
     // processing queue is empty (jobs already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
     $this->assertEquals(4, $this->predis->get($this->queue->processed));
+
+    // ttl is set
+    $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:1'));
+    $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:2'));
+    $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:3'));
+    $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:4'));
   }
 }

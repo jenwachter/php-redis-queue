@@ -128,12 +128,10 @@ class JobGroup extends BaseModel
     if ($successfulJobs + $failedJobs === $totalJobs) {
       // all jobs have run
       $this->withData('complete', true);
-    }
 
-    if ($successfulJobs === $totalJobs) {
-      // all jobs ran and were successful, resolve; otherwise, keep the records around
-      // if there are failed jobs, it's up to the user/client to resolve
-      $this->resolve();
+      // expire in a week if failed
+      $success = $successfulJobs === $totalJobs;
+      $this->resolve($success);
     }
 
     $this->save();
@@ -182,35 +180,23 @@ class JobGroup extends BaseModel
   }
 
   /**
-   * Resolve the group, which moves all the jobs associated
-   * with the group into the appropiate status queues.
-   *
-   * Groups are only resolved automatically when all jobs
-   * are successful. If a job fails the first time it is run,
-   * the client reruns and the rerun is successful, the group
-   * will be resolved.
-   *
-   * If any of the jobs cannot be successfully completed,
-   * the group will not automatically resolve - clients
-   * must manually resolve.
-   *
+   * Resolve the group, which sets the group and all
+   * associated job data to expire in 24 hours if the
+   * group was successful and one week if failed.
    * @return void
    */
-  public function resolve()
+  public function resolve(bool $success)
   {
-    // // to avoide creating more Queue objects than necessary
-    // $queues = [];
-    //
-    // foreach ($this->get('jobs') as $id) {
-    //   $job = new Job($this->redis, $id);
-    //   $queueName = $job->get('queue');
-    //
-    //   if (!isset($queues[$queueName])) {
-    //     $queues[$queueName] = new Queue($this->redis, $job->get('queue'));
-    //   }
-    //
-    //   $queue = $queues[$queueName];
-    //   $queue->moveToStatusQueue($job, $job->get('status') === 'success', true);
-    // }
+    $ttl = $success ?
+      60 * 60 * 24 :
+      60 * 60 * 24 * 7;
+
+    // set expires on the group data
+    $this->expire($ttl);
+
+    foreach ($this->get('jobs') as $id) {
+      $job = new Job($this->redis, $id);
+      $job->expire($ttl);
+    }
   }
 }

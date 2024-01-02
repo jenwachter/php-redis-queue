@@ -103,19 +103,21 @@ class QueueWorker
 
       $this->hook($jobName . '_before', $job->get());
 
+      $status = 'success';
+
       try {
         $context = call_user_func($this->callbacks[$jobName], $job->get('jobData'));
-        $this->onJobCompletion($job, 'success', $context);
       } catch (\Throwable $e) {
+        $status = 'failed';
         $context = $this->getExceptionData($e);
-        $this->log('warning', 'Queue job failed', ['context' => $job->get()]);
-        $this->onJobCompletion($job, 'failed', $context);
       }
 
-      // // for testing -- only one job runs at a time
+      $this->onJobCompletion($job, $status, $context);
+
+      // for testing -- only one job runs at a time
       // die();
 
-      // sleep($this->config['wait']);
+      sleep($this->config['wait']);
     }
   }
 
@@ -150,6 +152,13 @@ class QueueWorker
       if ($group->get('complete')) {
         $this->hook('group_after', $group, count($group->get('failed')) === 0);
       }
+    }
+
+    if (!$job->get('group')) {
+      // job is not part of a group
+      $status === 'success' ?
+        $job->expire() :
+        $job->expire(60 * 60 * 24 * 7); // expire failed jobs after a week?
     }
 
     $this->hook($job->get('jobName') . '_after', $job->get(), $status === 'success');
