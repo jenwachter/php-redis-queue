@@ -189,7 +189,7 @@ class JobGroup extends BaseModel
    * group was successful and one week if failed.
    * @return void
    */
-  public function resolve(bool $success)
+  protected function resolve(bool $success)
   {
     $ttl = $success ?
       60 * 60 * 24 :
