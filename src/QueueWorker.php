@@ -150,6 +150,9 @@ class QueueWorker
     }
 
     $job->save();
+
+    $this->hook($job->get('jobName') . '_after', $job->get(), $status === 'success');
+
     if ($groupId = $job->get('group')) {
       $group = new JobGroup($this->redis, $groupId);
       $group->onJobComplete($job->id(), $status === 'success');
@@ -157,6 +160,11 @@ class QueueWorker
       if ($group->get('complete')) {
         $this->hook('group_after', $group, count($group->get('failed')) === 0);
       }
+    } else {
+      // job is not part of a group
+      $status === 'success' ?
+        $job->expire() :
+        $job->expire(60 * 60 * 24 * 7); // expire failed jobs after a week?
     }
 
     if ($status !== 'success') {
@@ -166,15 +174,6 @@ class QueueWorker
         ]
       ]);
     }
-
-    if (!$job->get('group')) {
-      // job is not part of a group
-      $status === 'success' ?
-        $job->expire() :
-        $job->expire(60 * 60 * 24 * 7); // expire failed jobs after a week?
-    }
-
-    $this->hook($job->get('jobName') . '_after', $job->get(), $status === 'success');
   }
 
   protected function getExceptionData(\Throwable $e)
