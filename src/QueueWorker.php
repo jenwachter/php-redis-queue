@@ -122,7 +122,7 @@ class QueueWorker
       // for testing -- only one job runs at a time
       // die();
 
-      // sleep($this->config['wait']);
+      sleep($this->config['wait']);
     }
   }
 
