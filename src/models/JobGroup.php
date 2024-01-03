@@ -74,8 +74,7 @@ class JobGroup extends BaseModel
 
   public function setTotal(int $total)
   {
-    $this->withData('total', $total);
-    return $this->save();
+    return $this->withData('total', $total)->save();
   }
 
   /**
