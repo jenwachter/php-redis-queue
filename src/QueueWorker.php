@@ -108,6 +108,7 @@ class QueueWorker
       $this->hook($jobName . '_before', $job->get());
 
       $status = 'success';
+      $context = null;
 
       try {
         $context = call_user_func($this->callbacks[$jobName], $job->get('jobData'));
@@ -168,7 +169,7 @@ class QueueWorker
     }
 
     if ($status !== 'success') {
-      $this->log('warning', 'Job failed', [
+      $this->log('warning', $job->get('jobName') . ' job failed', [
         'context' => [
           'job' => $job->get(),
         ]
