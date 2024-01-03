@@ -143,12 +143,13 @@ class QueueWorker
   {
     $this->queue->onJobCompletion($job);
 
-    $job->withData('status', $status)->save();
+    $job->withData('status', $status);
 
     if ($context) {
-      $job->withData('context', $context)->save();
+      $job->withData('context', $context);
     }
 
+    $job->save();
     if ($groupId = $job->get('group')) {
       $group = new JobGroup($this->redis, $groupId);
       $group = $group->onJobComplete($job, $status === 'success');

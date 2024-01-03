@@ -91,7 +91,7 @@ class JobGroup extends BaseModel
 
     if (!$this->get('total')) {
       // add total, if there isn't one yet
-      $this->withData('total', count($this->get('jobs')))->save();
+      $this->withData('total', count($this->get('jobs')));
     }
 
     foreach ($this->get('jobs') as $id) {
@@ -99,7 +99,9 @@ class JobGroup extends BaseModel
       $this->addJobToQueue($job);
     }
 
-    $this->withData('queued', true)->save();
+    $this->withData('queued', true);
+
+    $this->save();
 
     return true;
   }
