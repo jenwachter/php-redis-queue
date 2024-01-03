@@ -92,14 +92,13 @@ class JobGroup extends BaseModel
       $this->withData('total', count($this->get('jobs')));
     }
 
+    $this->withData('queued', true);
+    $this->save();
+
     foreach ($this->get('jobs') as $id) {
       $job = new Job($this->redis, $id);
       $this->addJobToQueue($job);
     }
-
-    $this->withData('queued', true);
-
-    $this->save();
 
     return true;
   }
