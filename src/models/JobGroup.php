@@ -105,18 +105,18 @@ class JobGroup extends BaseModel
     return true;
   }
 
-  public function onJobComplete(Job $job, bool $success)
+  public function onJobComplete(int $jid, bool $success)
   {
     $metaKey = $success ? 'success' : 'failed';
 
     // add to success/failed
     $value = $this->get($metaKey);
-    $value[] = $job->id();
+    $value[] = $jid;
     $this->withData($metaKey, $value);
 
     // remove from pending
     $pending = $this->get('pending');
-    $key = array_search($job->id(), $pending);
+    $key = array_search($jid, $pending);
     if ($key !== false) {
       unset($pending[$key]);
     }
