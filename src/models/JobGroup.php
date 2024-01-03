@@ -63,13 +63,12 @@ class JobGroup extends BaseModel
     $this->save();
 
     $total = $this->get('total');
-
     if ($total && count($this->get('jobs')) === $total) {
       $this->queue();
     }
 
     // return the new job's id
-    return $job->id();
+    return $jid;
   }
 
   public function setTotal(int $total)
