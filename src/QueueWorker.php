@@ -159,14 +159,14 @@ class QueueWorker
       $group->onJobComplete($job->id(), $status === 'success');
 
       if ($group->get('complete')) {
-        $this->hook('group_after', $group, count($group->get('failed')) === 0);
+        $success = count($group->get('failed')) === 0;
+        $this->expireModel($group, $success);
+        $this->hook('group_after', $group, $success);
       }
-    } else {
-      // job is not part of a group
-      $status === 'success' ?
-        $job->expire() :
-        $job->expire(60 * 60 * 24 * 7); // expire failed jobs after a week?
     }
+
+    // set an expiration on the job data
+    $this->expireModel($job, $status === 'success');
 
     if ($status !== 'success') {
       $this->log('warning', $job->get('jobName') . ' job failed', [
@@ -175,6 +175,15 @@ class QueueWorker
         ]
       ]);
     }
+  }
+
+  protected function expireModel($model, $success)
+  {
+    $ttl = $success ?
+      60 * 60 * 24 :
+      60 * 60 * 24 * 7;
+
+    return $model->expire($ttl);
   }
 
   protected function getExceptionData(\Throwable $e)

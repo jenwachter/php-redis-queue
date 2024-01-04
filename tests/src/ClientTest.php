@@ -204,7 +204,20 @@ class ClientTest extends Base
 
   public function testJobGroup__autoQueue__predefinedTotal()
   {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
     $client = new ClientMock($this->predis);
+
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['callback'])
+      ->getMock();
+
+    $mock->expects($this->exactly(3))
+      ->method('callback')
+      ->willReturn(true);
+
+    $worker->addCallback('default', [$mock, 'callback']);
+
     $group = $client->createJobGroup(3);
 
     // make sure the change is present on the group object
@@ -224,8 +237,22 @@ class ClientTest extends Base
     // can't queue it again
     $this->assertFalse($group->queue());
 
+    $this->assertEquals([1, 2, 3], $this->predis->lrange('php-redis-queue:client:queuename:pending', 0, -1));
+
     // can't add more jobs
     $this->assertFalse($group->push('queuename'));
+
+    // set the worker to work
+    $worker->work(false);
+
+    $this->assertEquals(0, $this->predis->llen($this->queue->processing));
+    $this->assertEquals(3, $this->predis->get($this->queue->processed));
+
+    // ttls are set
+    $this->assertEquals($this->ttl['success'], $this->predis->ttl('php-redis-queue:groups:1'));
+    $this->assertEquals($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:1'));
+    $this->assertEquals($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:2'));
+    $this->assertEquals($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:3'));
   }
 
   public function testJobGroup__autoQueue__setTotal()

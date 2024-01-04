@@ -145,11 +145,7 @@ class JobGroup extends BaseModel
       // all jobs have run
       $this->withData('complete', true);
 
-      // expire in a week if failed
-      $success = $successfulJobs === $totalJobs;
-      $this->resolve($success);
-
-      if (!$success) {
+      if ($successfulJobs !== $totalJobs) {
         $this->log('warning', 'Job group failed', [
           'context' => [
             'group' => $this->get()
@@ -198,26 +194,5 @@ class JobGroup extends BaseModel
     $this->withData('pending', $pending);
 
     return $this->save();
-  }
-
-  /**
-   * Resolve the group, which sets the group and all
-   * associated job data to expire in 24 hours if the
-   * group was successful and one week if failed.
-   * @return void
-   */
-  protected function resolve(bool $success)
-  {
-    $ttl = $success ?
-      60 * 60 * 24 :
-      60 * 60 * 24 * 7;
-
-    // set expires on the group data
-    $this->expire($ttl);
-
-    foreach ($this->get('jobs') as $id) {
-      $job = new Job($this->redis, $id);
-      $job->expire($ttl);
-    }
   }
 }
