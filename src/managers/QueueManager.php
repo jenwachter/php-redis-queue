@@ -56,7 +56,7 @@ class QueueManager extends BaseManager
 
   protected function addJobsFromQueue(array $queues)
   {
-    foreach (['pending', 'processing', 'processed'] as $which) {
+    foreach (['pending', 'processed'] as $which) {
 
       $foundQueues = $this->redis->keys("php-redis-queue:client:*:$which");
 
