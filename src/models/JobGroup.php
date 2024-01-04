@@ -103,6 +103,24 @@ class JobGroup extends BaseModel
     return true;
   }
 
+  public function remove()
+  {
+    if ($this->get() === null) {
+      // group does not exist (expired or already removed)
+      return false;
+    }
+
+    // remove jobs from pending and processing lists
+    array_map(function (Job $job) {
+      if (in_array($job->get('status'), ['pending', 'processing'])) {
+        $this->jobManager->removeJobFromQueue($job);
+      }
+      $job->remove();
+    }, $this->getJobs());
+
+    return parent::remove();
+  }
+
   public function onJobComplete(int $jid, bool $success)
   {
     $metaKey = $success ? 'success' : 'failed';

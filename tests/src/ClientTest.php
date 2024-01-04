@@ -291,6 +291,40 @@ class ClientTest extends Base
     $this->assertEquals(3, $newGroup->get('total'));
   }
 
+  public function testJobGroup__remove()
+  {
+    $client = new ClientMock($this->predis);
+    $group = $client->createJobGroup();
+
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    // group data is there
+    $this->assertEquals(['php-redis-queue:groups:1'], $this->predis->keys('php-redis-queue:groups:*'));
+
+    // job data is there
+    $jobKeys = $this->predis->keys('php-redis-queue:jobs:*');
+    sort($jobKeys);
+    $this->assertEquals(['php-redis-queue:jobs:1', 'php-redis-queue:jobs:2', 'php-redis-queue:jobs:3'], $jobKeys);
+
+    $client->removeJobGroup($group->id());
+
+    // data is gone
+    $this->assertNull($this->predis->get('php-redis-queue:jobs:1'));
+    $this->assertNull($this->predis->get('php-redis-queue:jobs:2'));
+    $this->assertNull($this->predis->get('php-redis-queue:jobs:3'));
+    $this->assertNull($this->predis->get('php-redis-queue:groups:1'));
+  }
+
+  public function testJobGroup__remove__groupDoesNotExist()
+  {
+    $client = new ClientMock($this->predis);
+    $group = new JobGroup($this->predis, 10);
+
+    $this->assertFalse($group->remove());
+  }
+
   public function testReruntestJobGroup__rerunFailedJob()
   {
     $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);

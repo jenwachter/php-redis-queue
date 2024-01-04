@@ -21,6 +21,17 @@ class JobGroupManager extends BaseManager
     return $group;
   }
 
+  public function removeJobGroup(int $id)
+  {
+    $group = $this->getJobGroup($id);
+
+    if ($group->get() === null) {
+      return false;
+    }
+
+    return $group->remove();
+  }
+
   /**
    * Get a job group by ID
    * @return array

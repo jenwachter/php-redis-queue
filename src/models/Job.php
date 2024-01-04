@@ -19,6 +19,11 @@ class Job extends BaseModel
     ]);
   }
 
+  public function remove()
+  {
+    parent::remove();
+  }
+
   public function withRerun()
   {
     if (!$this->get('runs')) {

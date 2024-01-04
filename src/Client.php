@@ -80,4 +80,14 @@ class Client
   {
     return $this->jobGroupManager->createJobGroup($total, $data);
   }
+
+  /**
+   * Remove a job group
+   * @param int $id
+   * @return bool
+   */
+  public function removeJobGroup(int $id): bool
+  {
+    return $this->jobGroupManager->removeJobGroup($id);
+  }
 }
