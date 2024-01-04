@@ -65,7 +65,7 @@ class Client
 
    /**
     * Rerun a job that previously failed.
-    * @param int $jobId     ID of job to rerun
+    * @param int $jobId    removeJobGroupFromQueue ID of job to rerun
     * @return int           ID of new job
     * @param boolean $front Push the new job to the front of the queue?
     * @return int           ID of new job

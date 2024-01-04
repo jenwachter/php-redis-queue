@@ -111,11 +111,7 @@ class JobGroup extends BaseModel
     }
 
     // remove jobs from pending and processing lists
-    array_map(function (Job $job) {
-      if (in_array($job->get('status'), ['pending', 'processing'])) {
-        $this->jobManager->removeJobFromQueue($job);
-      }
-    }, $this->getJobs());
+    array_map(fn (Job $job) => $this->jobManager->removeJobFromQueue($job), $this->getJobs());
 
     return true;
   }
