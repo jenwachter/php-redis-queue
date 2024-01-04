@@ -190,15 +190,16 @@ class ClientTest extends Base
 
     $this->assertEquals([1, 2, 3, 4], $this->predis->lrange($this->queue->pending, 0, -1));
 
-    $this->assertTrue($client->remove('queuename', 3));
+    $this->assertTrue($client->pull(3));
 
+    // job removed from queue
     $this->assertEquals([1, 2, 4], $this->predis->lrange($this->queue->pending, 0, -1));
   }
 
   public function testRemove__jobNotInQueue(): void
   {
     $client = new ClientMock($this->predis);
-    $this->assertFalse($client->remove('queuename', 10));
+    $this->assertFalse($client->pull(10));
   }
 
   public function testJobGroup__autoQueue__predefinedTotal()

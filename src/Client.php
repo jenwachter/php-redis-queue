@@ -53,6 +53,16 @@ class Client
     return $this->addJobToQueue($job, true);
   }
 
+  /**
+   * Remove a job from its queue
+   * @param $id
+   * @return bool
+   */
+  public function pull($id)
+  {
+    return $this->jobManager->removeJobFromQueue($id);
+  }
+
    /**
     * Rerun a job that previously failed.
     * @param int $jobId     ID of job to rerun
@@ -64,17 +74,6 @@ class Client
   public function rerun(int $jobId, bool $front = false): int
   {
     return $this->jobManager->rerun($jobId, $front);
-  }
-
-  /**
-   * Remove a job from a queue
-   * @param string $queue
-   * @param int $jobId
-   * @return bool
-   */
-  public function remove(string $queue, int $jobId): bool
-  {
-    return $this->jobManager->removeJobFromQueue($queue, $jobId);
   }
 
   public function createJobGroup($total = null, $data = []): models\JobGroup

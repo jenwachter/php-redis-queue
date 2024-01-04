@@ -47,17 +47,26 @@ class JobManager extends BaseManager
   }
 
   /**
-   * Remove a job from a queue
-   * @param string $queueName
-   * @param int $jobId
+   * Remove a job from its queue
+   * @param int|Job $jobId
    * @return bool
    */
-  public function removeJobFromQueue(string $queueName, int $jobId): bool
+  public function removeJobFromQueue(int|Job $job): bool
   {
-    $queue = new Queue($this->redis, $queueName);
+    if (is_int($job)) {
+      $job = new Job($this->redis, $job);
+    }
 
-    $result = $this->redis->lrem($queue->pending, -1, $jobId);
-    return $result === 1;
+    if ($job->get() === null) {
+      return false;
+    }
+
+    $queue = new Queue($this->redis, $job->get('queue'));
+
+    $removedFromPending = $this->redis->lrem($queue->pending, -1, $job->id());
+    $removedFromProcessing = $this->redis->lrem($queue->processing, -1, $job->id());
+
+    return $removedFromPending === 1 || $removedFromProcessing === 1;
   }
 
   /**
