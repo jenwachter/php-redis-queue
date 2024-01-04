@@ -21,7 +21,7 @@ class JobGroupManager extends BaseManager
     return $group;
   }
 
-  public function removeJobGroup(int $id)
+  public function removeJobGroupFromQueue(int $id)
   {
     $group = $this->getJobGroup($id);
 
@@ -29,7 +29,7 @@ class JobGroupManager extends BaseManager
       return false;
     }
 
-    return $group->remove();
+    return $group->removeFromQueue();
   }
 
   /**

@@ -86,8 +86,8 @@ class Client
    * @param int $id
    * @return bool
    */
-  public function removeJobGroup(int $id): bool
+  public function removeJobGroupFromQueue(int $id): bool
   {
-    return $this->jobGroupManager->removeJobGroup($id);
+    return $this->jobGroupManager->removeJobGroupFromQueue($id);
   }
 }
