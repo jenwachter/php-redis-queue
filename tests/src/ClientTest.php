@@ -201,10 +201,39 @@ class ClientTest extends Base
     $this->assertFalse($client->remove('queuename', 10));
   }
 
-  public function testJobGroup__autoQueue()
+  public function testJobGroup__autoQueue__predefinedTotal()
   {
     $client = new ClientMock($this->predis);
     $group = $client->createJobGroup(3);
+
+    // make sure the change is present on the group object
+    $this->assertEquals(3, $group->get('total'));
+
+    // make sure it was saved
+    $newGroup = (new JobGroup($this->predis, (int) $group->id()));
+    $this->assertEquals(3, $newGroup->get('total'));
+
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    // make sure the group auto queued
+    $this->assertTrue($group->get('queued'));
+
+    // can't queue it again
+    $this->assertFalse($group->queue());
+
+    // can't add more jobs
+    $this->assertFalse($group->push('queuename'));
+  }
+
+
+
+  public function testJobGroup__autoQueue__setTotal()
+  {
+    $client = new ClientMock($this->predis);
+    $group = $client->createJobGroup();
+    $group->setTotal(3);
 
     // make sure the change is present on the group object
     $this->assertEquals(3, $group->get('total'));
