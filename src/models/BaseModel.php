@@ -74,6 +74,11 @@ class BaseModel
     return $this->data;
   }
 
+  public function remove()
+  {
+    return $this->redis->del($this->key());
+  }
+
   /**
    * Get the model's data in JSON
    * @return false|string
