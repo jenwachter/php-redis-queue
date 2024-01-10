@@ -217,16 +217,6 @@ Arguments:
 * `$jobName`: Name of the job to handle the work.
 * `$data`: Data to pass to the worker.
 
-#### __`rerun(int $id)`__
-
-Reruns a previously failed job.
-
-Returns: Integer. ID of the job.
-
-Arguments:
-
-* `$id`: ID of failed job.
-
 #### __`pull(int $id)`__
 
 Pull a job from a queue.
@@ -236,6 +226,16 @@ Returns: Boolean. `true` if the job was successfully removed; otherwise, `false`
 Arguments:
 
 * `$id`: ID of job to pull.
+
+#### __`rerun(int $id)`__
+
+Reruns a previously failed job.
+
+Returns: Integer. ID of the job.
+
+Arguments:
+
+* `$id`: ID of failed job.
 
 #### __`createJobGroup(int total = null, $data = [])`__
 
