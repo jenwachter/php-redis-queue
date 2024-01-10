@@ -4,7 +4,7 @@ namespace PhpRedisQueue\cli\commands\JobCommands;
 
 use PhpRedisQueue\cli\commands\Command;
 use PhpRedisQueue\models\Job;
-use PhpRedisQueue\JobManager;
+use PhpRedisQueue\managers\JobManager;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Helper\TableCell;
@@ -34,7 +34,7 @@ class InfoCommand extends Command
   protected function execute(InputInterface $input, OutputInterface $output)
   {
     $id = $input->getArgument('id');
-    $job = $this->jobManager->getJob($id);
+    $job = $this->jobManager->getJob($id)->get();
 
     if (empty($job)) {
       $output->writeln(sprintf('Job #%s not found.', $id));
@@ -45,15 +45,15 @@ class InfoCommand extends Command
       $table
         ->setHeaderTitle(sprintf('Job #%s', $id))
         ->setHeaders($this->getJobTableHeaders())
-        ->setRows(array_map([$this, 'getJobTableRow'], [$job['meta']]));
+        ->setRows(array_map([$this, 'getJobTableRow'], [$job]));
       $table->render();
 
-      if (!empty($job['job'])) {
+      if (!empty($job['jobData'])) {
         $table = new Table($output);
         $table
           ->setHeaderTitle(sprintf('Data attached to job #%s', $id))
           ->setRows([
-            [print_r($job['job'], true)]
+            [print_r($job['jobData'], true)]
           ]);
 
         $output->writeln("");

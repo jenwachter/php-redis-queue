@@ -4,8 +4,8 @@ namespace PhpRedisQueue\cli\commands\JobCommands;
 
 use PhpRedisQueue\cli\commands\Command;
 use PhpRedisQueue\models\Job;
-use PhpRedisQueue\JobManager;
-use PhpRedisQueue\QueueManager;
+use PhpRedisQueue\managers\JobManager;
+use PhpRedisQueue\managers\QueueManager;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Helper\TableCell;
@@ -43,8 +43,8 @@ class RerunCommand extends Command
     $id = $input->getArgument('id');
     $runNow = $input->getArgument('now') !== false;
 
-    $job = $this->jobManager->getJob($id);
-    $jobQueue = $job['meta']['queue'];
+    $job = $this->jobManager->getJob($id)->get();
+    $jobQueue = $job->get('queue');
 
     if (!in_array($jobQueue, $this->queueManager->getActiveQueues())) {
       $output->writeln(sprintf('<error>Error: Cannot rerun job #%s.</error>', $id));

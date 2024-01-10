@@ -2,35 +2,29 @@
 
 namespace PhpRedisQueue;
 
-use PhpRedisQueue\models\Job;
+use PhpRedisQueue\managers\JobGroupManager;
+use PhpRedisQueue\traits\CanCreateJobs;
 use PhpRedisQueue\traits\CanLog;
-use Psr\Log\LoggerInterface;
 
 class Client
 {
+  use CanCreateJobs;
   use CanLog;
-
-  protected JobManager $jobManager;
-
-  protected $defaultConfig = [
-    'logger' => null, // instance of Psr\Log\LoggerInterface
-  ];
-
-  protected $config = [];
 
   /**
    * @param \Predis\Client $redis
-   * @param LoggerInterface|null $logger
+   * @param array $config
    */
   public function __construct(protected \Predis\Client $redis, array $config = [])
   {
-    $this->jobManager = new JobManager($redis, $config);
-
-    $this->config = array_merge($this->defaultConfig, $config);
-
-    if (isset($this->config['logger']) && !$this->config['logger'] instanceof \Psr\Log\LoggerInterface) {
-      throw new \InvalidArgumentException('Logger must be an instance of Psr\Log\LoggerInterface.');
+    if (isset($config['logger'])) {
+      Logger::set($config['logger']);
+      unset($config['logger']);
     }
+
+    $this->setJobManager($redis);
+
+    $this->jobGroupManager = new JobGroupManager($redis);
   }
 
   /**
@@ -38,18 +32,12 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @return integer|false ID of job or FALSE on failure
+   * @return int|false ID of job or FALSE on failure
    */
-  public function push(string $queue, string $jobName = 'default', array $jobData = []): int
+  public function push(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
-    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
-    $job->withMeta('status', 'pending')->save();
-    
-    if ($this->jobManager->addJobToQueue($queue, $job)) {
-      return $job->id();
-    }
-
-    return false;
+    $job = $this->createJob($queue, $jobName, $jobData);
+    return $this->addJobToQueue($job);
   }
 
   /**
@@ -57,41 +45,49 @@ class Client
    * @param string $queue   Queue name
    * @param string $jobName Name of the specific job to run, defaults to `default`. Ex: `upload`
    * @param array $jobData  Data associated with this job
-   * @return integer|false ID of job or FALSE on failure
+   * @return int|false ID of job or FALSE on failure
    */
-  public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int
+  public function pushToFront(string $queue, string $jobName = 'default', array $jobData = []): int|false
   {
-    $job = $this->jobManager->createJob($queue, $jobName, $jobData);
-    $job->withMeta('status', 'pending')->save();
+    $job = $this->createJob($queue, $jobName, $jobData);
+    return $this->addJobToQueue($job, true);
+  }
 
-    if ($this->jobManager->addJobToQueue($queue, $job, true)) {
-      return $job->id();
-    }
-
-    return false;
+  /**
+   * Remove a job from its queue
+   * @param $id
+   * @return bool
+   */
+  public function pull($id)
+  {
+    return $this->jobManager->removeJobFromQueue($id);
   }
 
    /**
     * Rerun a job that previously failed.
-    * @param int $jobId     ID of job to rerun
+    * @param int $jobId    removeJobGroupFromQueue ID of job to rerun
     * @return int           ID of new job
     * @param boolean $front Push the new job to the front of the queue?
     * @return int           ID of new job
     * @throws \Exception
     */
-  public function rerun(int $jobId, bool $front = false)
+  public function rerun(int $jobId, bool $front = false): int
   {
     return $this->jobManager->rerun($jobId, $front);
   }
 
+  public function createJobGroup($total = null, $data = []): models\JobGroup
+  {
+    return $this->jobGroupManager->createJobGroup($total, $data);
+  }
+
   /**
-   * Remove a job from a queue
-   * @param string $queue
-   * @param int $jobId
+   * Remove a job group
+   * @param int $id
    * @return bool
    */
-  public function remove(string $queue, int $jobId): bool
+  public function removeJobGroupFromQueue(int $id): bool
   {
-    return $this->jobManager->removeJobFromQueue($queue, $jobId);
+    return $this->jobGroupManager->removeJobGroupFromQueue($id);
   }
 }

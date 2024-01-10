@@ -2,8 +2,6 @@
 
 namespace PhpRedisQueue\models;
 
-use PhpRedisQueue\QueueManager;
-
 class Queue
 {
   /**
@@ -25,18 +23,12 @@ class Queue
   public string $processing;
 
   /**
-   * Name of list that contains jobs that ran succesfully
+   * Name of varible that keeps track of how many jobs have processed in this queue
    * @var string
    */
-  public string $success;
+  public string $processed;
 
-  /**
-   * Name of list that contains jobs that failed
-   * @var string
-   */
-  public string $failed;
-
-  public function __construct(string $name)
+  public function __construct(protected \Predis\Client $redis, string $name)
   {
     $this->name = str_replace(':', '-', $name);
 
@@ -44,7 +36,49 @@ class Queue
 
     $this->pending = $base . ':pending';
     $this->processing = $base . ':processing';
-    $this->success = $base . ':success';
-    $this->failed = $base . ':failed';
+    $this->processed = $base . ':processed';
+  }
+
+  public function getJobs(string $which, int $limit = 50)
+  {
+    $jobs = $this->redis->lrange($this->$which, 0, $limit);
+
+    return array_map(function ($jobId) {
+      return json_decode($this->redis->get('php-redis-queue:jobs:'. $jobId));
+    }, $jobs);
+  }
+
+  /**
+   * Check the queue for jobs
+   * @param bool $block       TRUE to use blpop(); FALSE to use lpop()
+   * @return array|string|null
+   */
+  public function check(bool $block = true)
+  {
+    if ($block) {
+      return $this->redis->blpop($this->pending, 0);
+    }
+
+    return $this->redis->lpop($this->pending);
+  }
+
+  /**
+   * Remove a job from the processing queue
+   * @param array $job Job data
+   * @return int
+   */
+  public function removeFromProcessing(Job $job): int
+  {
+    return $this->redis->lrem($this->processing, -1, $job->id());
+  }
+
+  /**
+   * Increments the number of jobs processed in this queue (success or fail)
+   * @return int
+   */
+  public function onJobCompletion(Job $job)
+  {
+    $this->removeFromProcessing($job);
+    return $this->redis->incr($this->processed);
   }
 }

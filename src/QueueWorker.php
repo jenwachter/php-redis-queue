@@ -2,10 +2,11 @@
 
 namespace PhpRedisQueue;
 
+use PhpRedisQueue\managers\QueueManager;
 use PhpRedisQueue\models\Job;
+use PhpRedisQueue\models\JobGroup;
 use PhpRedisQueue\models\Queue;
 use PhpRedisQueue\traits\CanLog;
-use Psr\Log\LoggerInterface;
 
 class QueueWorker
 {
@@ -19,7 +20,7 @@ class QueueWorker
    * Default configuration that is merged with configuration passed in constructor
    * @var array
    */
-  protected $defaultConfig = [
+  protected array $defaultConfig = [
     /**
      * Prevents PHP from timing out due to blpop()
      * Pass NULL to ignore this setting and use
@@ -28,22 +29,6 @@ class QueueWorker
      * @var int
      */
     'default_socket_timeout' => -1,
-    /**
-     * @var Psr\Log\LoggerInterface|null
-     */
-    'logger' => null,
-
-    /**
-     * Length limit for failed job list
-     * @var int
-     */
-    'failedListLimit' => 500,
-
-    /**
-     * Length limit for success job list
-     * @var int
-     */
-    'successListLimit' => 500,
 
     /**
      * Number of seconds to wait between jobs
@@ -52,7 +37,7 @@ class QueueWorker
     'wait' => 1,
   ];
 
-  protected $config = [];
+  protected array $config = [];
 
   /**
    * Array of callbacks used when processing work
@@ -67,16 +52,17 @@ class QueueWorker
    */
   public function __construct(protected \Predis\Client $redis, string $queueName, array $config = [])
   {
-    $this->queue = new Queue($queueName);
-
-    $this->queueManager = new QueueManager($redis, $config);
-    $this->queueManager->registerQueue($this->queue);
+    if (isset($config['logger'])) {
+      Logger::set($config['logger']);
+      unset($config['logger']);
+    }
 
     $this->config = array_merge($this->defaultConfig, $config);
 
-    if (isset($this->config['logger']) && !$this->config['logger'] instanceof LoggerInterface) {
-      throw new \InvalidArgumentException('Logger must be an instance of Psr\Log\LoggerInterface.');
-    }
+    $this->queue = new Queue($this->redis,$queueName);
+
+    $this->queueManager = new QueueManager($this->redis);
+    $this->queueManager->registerQueue($this->queue);
   }
 
    /**
@@ -94,37 +80,47 @@ class QueueWorker
       $this->redis->lpush($this->queue->pending, $id);
     }
 
-    while($id = $this->checkQueue($block)) {
+    while($id = $this->queue->check($block)) {
 
       $id = is_array($id) ?
         $id[1] : // blpop
         $id;     // lpop
 
       $job = new Job($this->redis, (int) $id);
-      $job->withMeta('status', 'processing')->save();
+      $job->withData('status', 'processing')->save();
 
       $this->redis->lpush($this->queue->processing, $id);
 
-      $jobName = $job->jobName();
+      $jobName = $job->get('jobName');
 
       if (!isset($this->callbacks[$jobName])) {
         $queueName = $this->queue->name;
         $message = "No callback set for `$jobName` job in $queueName queue.";
-        $this->log('warning', $message, ['context' => $job->get()]);
+        $this->log('warning', $message, [
+          'context' => [
+            'job' => $job->get()
+          ]
+        ]);
         $this->onJobCompletion($job, 'failed', $message);
         continue;
       }
 
       $this->hook($jobName . '_before', $job->get());
 
+      $status = 'success';
+      $context = null;
+
       try {
-        $context = call_user_func($this->callbacks[$jobName], $job->jobData());
-        $this->onJobCompletion($job, 'success', $context);
+        $context = call_user_func($this->callbacks[$jobName], $job->get('jobData'));
       } catch (\Throwable $e) {
+        $status = 'failed';
         $context = $this->getExceptionData($e);
-        $this->log('warning', 'Queue job failed', ['context' => $job->get()]);
-        $this->onJobCompletion($job, 'failed', $context);
       }
+
+      $this->onJobCompletion($job, $status, $context);
+
+      // for testing -- only one job runs at a time
+      // die();
 
       sleep($this->config['wait']);
     }
@@ -144,84 +140,50 @@ class QueueWorker
     $this->callbacks[$name] = $callable;
   }
 
-  protected function checkQueue(bool $block = true)
-  {
-    if ($block) {
-      return $this->redis->blpop($this->queue->pending, 0);
-    }
-
-    return $this->redis->lpop($this->queue->pending);
-  }
-
   protected function onJobCompletion(Job $job, string $status, $context = null)
   {
-    $this->removeFromProcessing($job);
-    $this->moveToStatusQueue($job, $status === 'success');
+    $this->queue->onJobCompletion($job);
 
-    $job->withMeta('status', $status)->save();
+    $job->withData('status', $status);
 
     if ($context) {
-      $job->withMeta('context', $context)->save();
+      $job->withData('context', $context);
     }
 
-    $this->hook($job->jobName() . '_after', $job->get(), $status === 'success');
+    $job->save();
 
-    // if ($status === 'success' && $job['meta']['original']) {
-    //   // remove the old job from the failed queue
-    //   $this->redis->lrem($this->failed, -1, json_encode($job['meta']['original']['meta']['id']));
-    //
-    //   // remove the old job's data
-    //   $this->deleteJob($job['meta']['original']['meta']['id']);
-    // }
-  }
+    $this->hook($job->get('jobName') . '_after', $job->get(), $status === 'success');
 
-  /**
-   * Remove a job from the processing queue
-   * @param array $job Job data
-   * @return int
-   */
-  protected function removeFromProcessing(Job $job): int
-  {
-    return $this->redis->lrem($this->queue->processing, -1, $job->id());
-  }
+    if ($groupId = $job->get('group')) {
+      $group = new JobGroup($this->redis, $groupId);
+      $group->onJobComplete($job->id(), $status === 'success');
 
-  /**
-   * Move a job to a status queue (success or failed)
-   * @param Job $job      Job
-   * @param bool $success Success (true) or failed (false)
-   * @return void
-   */
-  protected function moveToStatusQueue(Job $job, bool $success)
-  {
-    $list = $success ? $this->queue->success : $this->queue->failed;
-    $this->redis->lpush($list, $job->id());
-
-    $this->trimList($list);
-  }
-
-  protected function trimList(string $list)
-  {
-    $limit = $list === $this->queue->success ? 'successListLimit' : 'failedListLimit';
-    $limit = $this->config[$limit];
-
-    if ($limit === -1) {
-      return;
+      if ($group->get('complete')) {
+        $success = count($group->get('failed')) === 0;
+        $this->expireModel($group, $success);
+        $this->hook('group_after', $group, $success);
+      }
     }
 
-    $length = $this->redis->llen($list);
+    // set an expiration on the job data
+    $this->expireModel($job, $status === 'success');
 
-    if ($length > $limit) {
-
-      // get the IDs we're going to remove
-      $ids = $this->redis->lrange($list,  $limit, $length);
-
-      // trim list
-      $this->redis->ltrim($list, 0, $limit - 1);
-
-      // remove jobs
-      $ids = array_map(fn ($id) => "php-redis-queue:jobs:$id", $ids);
-      $this->redis->del($ids);
+    if ($status !== 'success') {
+      $this->log('warning', $job->get('jobName') . ' job failed', [
+        'context' => [
+          'job' => $job->get(),
+        ]
+      ]);
     }
+  }
+
+  protected function expireModel($model, $success)
+  {
+    $ttl = $success ?
+      60 * 60 * 24 :
+      60 * 60 * 24 * 7;
+
+    return $model->expire($ttl);
   }
 
   protected function getExceptionData(\Throwable $e)

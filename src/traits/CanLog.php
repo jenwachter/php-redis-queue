@@ -2,14 +2,18 @@
 
 namespace PhpRedisQueue\traits;
 
+use PhpRedisQueue\Logger;
+
 trait CanLog
 {
-  protected function log(string $level, string $message, array $data = [])
+  protected function log(string $level, string $message, array $data = []): void
   {
-    if (!isset($this->config['logger'])) {
+    $logger = Logger::get();
+
+    if (!$logger) {
       return;
     }
 
-    $this->config['logger']->$level($message, $data);
+    $logger->$level($message, $data);
   }
 }
