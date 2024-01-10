@@ -227,15 +227,15 @@ Arguments:
 
 * `$id`: ID of failed job.
 
-#### __`remove(int $id)`__
+#### __`pull(int $id)`__
 
-Remove a job from a queue.
+Pull a job from a queue.
 
 Returns: Boolean. `true` if the job was successfully removed; otherwise, `false`.
 
 Arguments:
 
-* `$id`: ID of job to remove.
+* `$id`: ID of job to pull.
 
 #### __`createJobGroup(int total = null, $data = [])`__
 
