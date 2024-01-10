@@ -39,7 +39,7 @@ When a client pushes a job into a queue, it waits in the queue until it reaches 
     1. If the callback does not throw an exception, it is considered successful. If the callback throws an exception, it is considered failed.
     1. The job is removed from the processing queue and added to either the failed or success list.
 1. Calls an _after_ callback for the job type, if defined.
-1. If the job is part of a group and all jobs within the group have completed, the worker calls the `group_after` callback, if defined.
+1. If the job is part of a [job group](#job-groups) and all jobs within the group have completed, the worker calls the `group_after` callback, if defined.
 1. The queue moves on to the next job or waits until another is added.
 
 ## Quick example
@@ -98,6 +98,43 @@ $data = [
 // push the job to the files queue
 $client->push('files', 'upload', $data);
 
+```
+
+
+### Job groups
+
+You can also group jobs into a Job Group, which enables you to use the `group_after` callback when all jobs in the group have completed. Jobs add to a job group can be assigned to any queue. Refer to the [Job Group documentation](#job-group) for more details.
+
+_*client.php*_
+```php
+$predis = new Predis\Client();
+$client = new PhpRedisQueue\Client($predis);
+
+// create a job group
+$group = $client->createJobGroup();
+
+// add jobs to the group
+$group->push('queuename', 'jobname');
+$group->push('another-queuename', 'jobname');
+$group->push('queuename', 'jobname');
+$group->push('queuename', 'jobname');
+
+// add jobs in the group to the queue
+$group->queue();
+```
+
+_*worker.php*_
+```php
+$predis = new Predis\Client();
+$worker = new PhpRedisQueue\QueueWorker($predis, 'queuename');
+
+$worker->addCallback('jobname', fn (array $data) true);
+
+$worker->addCallback('group_after', function ($group, $success) {
+  // respond to group completion
+});
+
+$worker->work();
 ```
 
 ## Documentation
@@ -229,9 +266,9 @@ Arguments:
 
 #### __`rerun(int $id)`__
 
-Reruns a previously failed job.
+Reruns a previously failed job. Throws an exception if the job was successful already or cannot be found.
 
-Returns: Integer. ID of the job.
+Returns: Boolean. TRUE if the job was successfully readded to the queue.
 
 Arguments:
 
@@ -247,6 +284,72 @@ Arguments:
 
 * `$total`: Total number of jobs.
 * `$data`: array of data to store with the job group.
+
+
+### Job Group
+
+#### Initialization
+
+A job group are created via the `Client::createJobGroup`, which then returns the JobGroup model.
+
+```php
+$predis = new Predis\Client();
+$client = new \PhpRedisQueue\Client($predis);
+
+$group = $group->createJobGroup($total = null, $data = []);
+```
+
+Returns: JobGroup model
+
+Arguments:
+
+* `$total`: Total number of jobs, if known at initialization.
+* `$data`: Array of data to attach to the group, which can be of use in the `group_after` callback.
+
+
+### JobGroup Model Methods
+
+#### __`push(string $queue, string $jobName = 'default', array $jobData = [])`__
+
+Pushes a job to the job group. Note: jobs cannot be added to a Job Group if it has already been queued.
+
+Returns: Integer. ID of job.
+
+Arguments:
+
+* `$queue`: Name of the queue.
+* `$jobName`: Name of the job to handle the work.
+* `$data`: Data to pass to the worker.
+
+#### __`setTotal(int total)`__
+
+Tells the group how many jobs to expect. Enables the Job Group to automatically add the jobs to the queue once the total is reached. Alternatively, use [`JobGroup::queue()`](#queue) to manually queue.
+
+Returns: Boolean. TRUE if the total was successfully set.
+
+#### __`queue()`__
+
+Add the group's jobs to the queue. Only use this method if the Job Group is unaware of the total number of jos to expect via initialization of [`JobGroup::setTotal()`](#settotalint-total).
+
+Returns: Boolean
+
+#### __`removeFromQueue()`__
+
+Removes any remaining jobs in the group from their queues.
+
+Returns: Boolean
+
+#### __`getJobs()`__
+
+Get an array of jobs associated with the group.
+
+Returns: array of Job models.
+
+#### __`getUserData()`__
+
+Get the data assigned to the group on initialization.
+
+Returns: array
 
 
 ### CLI
