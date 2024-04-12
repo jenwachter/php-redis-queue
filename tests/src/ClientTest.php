@@ -8,6 +8,8 @@ use PhpRedisQueue\models\Queue;
 
 class ClientTest extends Base
 {
+  protected Queue $queue;
+
   protected $ttl = [
     'success' => 60 * 60 * 24,
     'failed' => 60 * 60 * 24 * 7,

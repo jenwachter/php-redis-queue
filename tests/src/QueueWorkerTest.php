@@ -2,12 +2,12 @@
 
 namespace PhpRedisQueue;
 
-use PhpRedisQueue\models\Job;
-use PhpRedisQueue\models\JobGroup;
 use PhpRedisQueue\models\Queue;
 
 class QueueWorkerTest extends Base
 {
+  protected Queue $queue;
+
   protected $ttl = [
     'success' => 60 * 60 * 24,
     'failed' => 60 * 60 * 24 * 7,

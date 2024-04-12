@@ -11,6 +11,8 @@ class Client
   use CanCreateJobs;
   use CanLog;
 
+  protected JobGroupManager $jobGroupManager;
+
   /**
    * @param \Predis\Client $redis
    * @param array $config
