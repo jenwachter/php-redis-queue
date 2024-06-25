@@ -43,7 +43,7 @@ class RerunCommand extends Command
     $id = $input->getArgument('id');
     $runNow = $input->getArgument('now') !== false;
 
-    $job = $this->jobManager->getJob($id)->get();
+    $job = $this->jobManager->getJob($id);
     $jobQueue = $job->get('queue');
 
     if (!in_array($jobQueue, $this->queueManager->getActiveQueues())) {
