@@ -95,8 +95,6 @@ class JobManager extends BaseManager
 
     $job->withRerun()->save();
 
-    $queue = new Queue($this->redis, $job->get('queue'));
-
     return $this->addJobToQueue($job, $front);
   }
 }
