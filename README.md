@@ -103,7 +103,7 @@ $client->push('files', 'upload', $data);
 
 ### Job groups
 
-You can also group jobs into a Job Group, which enables you to use the `group_after` callback when all jobs in the group have completed. Jobs add to a job group can be assigned to any queue. Refer to the [Job Group documentation](#job-group) for more details.
+You can also group jobs into a Job Group, which enables you to use the `group_after` callback when all jobs in the group have completed. Jobs added to a job group can be assigned to any queue. Refer to the [Job Group documentation](#job-group) for more details.
 
 _*client.php*_
 ```php
