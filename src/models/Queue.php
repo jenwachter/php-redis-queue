@@ -73,12 +73,12 @@ class Queue
   }
 
   /**
-   * Increments the number of jobs processed in this queue (success or fail)
+   * Move completed job to processed queue (success or fail)
    * @return int
    */
   public function onJobCompletion(Job $job)
   {
     $this->removeFromProcessing($job);
-    return $this->redis->incr($this->processed);
+    return $this->redis->lpush($this->queue->processed, $job->id());
   }
 }

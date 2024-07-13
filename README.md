@@ -379,7 +379,7 @@ $ ./vendor/bin/prq queues:list
 
 ##### __`prq queues:jobs <queuename>`__
 
-List jobs associated with the given queue.
+List of pending jobs associated with the given queue.
 
 Arguments:
 
@@ -401,6 +401,33 @@ $ ./vendor/bin/prq queues:jobs files_queue
 | 2  | 2023-09-21T10:32:03  | upload     |
 | 1  | 2023-09-21T10:29:46  | upload     |
 +----+----------------------+------------+
+```
+
+##### __`prq queues:jobs:processed <queuename> [-status [ all | success | failed]]`__
+
+List of processed jobs associated with the given queue.
+
+Arguments:
+
+* `queuename`: Name of the queue.
+* `status`: Status of the jobs to list [`all`, `success`, `failed`]. Default: `all`
+
+Example output:
+
+```bash
+$ ./vendor/bin/prq queues:jobs files_queue
++----+----------------------+------------+---------+-------------------+
+| ID | Datetime initialized | Job name   | Status  | Context           |
++----+----------------------+------------+---------+-------------------+
+| 8  | 2023-09-21T10:38:34  | upload     | success | n/a               |
+| 7  | 2023-09-21T10:37:45  | upload     | success | n/a               |
+| 6  | 2023-09-21T10:36:02  | delete     | success | n/a               |
+| 5  | 2023-09-21T10:35:53  | delete     | success | n/a               |
+| 4  | 2023-09-21T10:35:09  | upload     | failed  | exception message |
+| 3  | 2023-09-21T10:34:21  | upload     | success | n/a               |
+| 2  | 2023-09-21T10:32:03  | upload     | success | n/a               |
+| 1  | 2023-09-21T10:29:46  | upload     | success | n/a               |
++----+----------------------+------------+---------+-------------------+
 ```
 
 #### Group commands

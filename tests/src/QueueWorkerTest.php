@@ -33,7 +33,7 @@ class QueueWorkerTest extends Base
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(1, $this->predis->get($this->queue->processed));
+    $this->assertEquals(1, $this->predis->llen($this->queue->processed));
 
     // job data is saved
     $this->assertEquals($this->getJobData(context: 'No callback set for `default` job in queuename queue.', status: 'failed'), $this->predis->get('php-redis-queue:jobs:1'));
@@ -101,7 +101,7 @@ class QueueWorkerTest extends Base
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(2, $this->predis->get($this->queue->processed));
+    $this->assertEquals(2, $this->predis->llen($this->queue->processed));
 
     // job data is saved
     $this->assertEquals($this->getJobData(status: 'success'), $this->predis->get('php-redis-queue:jobs:1'));
@@ -179,7 +179,7 @@ class QueueWorkerTest extends Base
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(1, $this->predis->get($this->queue->processed));
+    $this->assertEquals(1, $this->predis->llen($this->queue->processed));
 
     // job data is saved
     $this->assertEquals($this->getJobData(
@@ -247,7 +247,7 @@ class QueueWorkerTest extends Base
 
     // processing queue is empty (job already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(1, $this->predis->get($this->queue->processed));
+    $this->assertEquals(1, $this->predis->llen($this->queue->processed));
 
     // job data is saved
     $this->assertEquals($this->getJobData(
@@ -304,7 +304,7 @@ class QueueWorkerTest extends Base
 
     // processing queue is empty (jobs already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(4, $this->predis->get($this->queue->processed));
+    $this->assertEquals(4, $this->predis->llen($this->queue->processed));
 
     // ttl is set
     $this->assertLessThanOrEqual($this->ttl['success'], $this->predis->ttl('php-redis-queue:jobs:1'));
