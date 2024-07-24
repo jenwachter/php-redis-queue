@@ -420,6 +420,6 @@ class ClientTest extends Base
     $this->assertEquals('success', $job->get('status'));
     $this->assertEquals(1, count($job->get('runs')));
 
-    $this->assertEquals(4, $this->predis->llen($this->queue->processed));
+    $this->assertEquals(3, $this->predis->llen($this->queue->processed));
   }
 }

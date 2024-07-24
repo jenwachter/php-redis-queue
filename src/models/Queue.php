@@ -79,6 +79,6 @@ class Queue
   public function onJobCompletion(Job $job)
   {
     $this->removeFromProcessing($job);
-    return $this->redis->lpush($this->queue->processed, $job->id());
+    return $this->redis->lpush($this->processed, $job->id());
   }
 }
