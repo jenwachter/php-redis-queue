@@ -78,7 +78,7 @@ class QueueManager extends BaseManager
           ];
         }
 
-        $queues[$queueName][$which] = $which === 'processed' ? $this->redis->get($keyName) : $this->redis->llen($keyName);
+        $queues[$queueName][$which] = $this->redis->llen($keyName);
       }
     }
 
