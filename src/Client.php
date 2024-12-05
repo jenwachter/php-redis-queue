@@ -93,4 +93,14 @@ class Client
   {
     return $this->jobGroupManager->removeJobGroupFromQueue($id);
   }
+
+  public function getJob($id)
+  {
+    return $this->jobManager->getJob($id);
+  }
+
+  public function getJobGroup($id)
+  {
+    return $this->jobGroupManager->getJobGroup($id);
+  }
 }
