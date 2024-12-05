@@ -67,15 +67,16 @@ class Client
 
    /**
     * Rerun a job that previously failed.
-    * @param int $jobId    removeJobGroupFromQueue ID of job to rerun
-    * @return int           ID of new job
-    * @param boolean $front Push the new job to the front of the queue?
-    * @return int           ID of new job
+    * @param int $jobId       removeJobGroupFromQueue ID of job to rerun
+    * @return int             ID of new job
+    * @param boolean $front   Push the new job to the front of the queue?
+   * @param boolean $allowAll Allow all jobs (even successful ones) to be rerun
+    * @return int             ID of new job
     * @throws \Exception
     */
-  public function rerun(int $jobId, bool $front = false): int
+  public function rerun(int $jobId, bool $front = false, bool $allowAll = false): int
   {
-    return $this->jobManager->rerun($jobId, $front);
+    return $this->jobManager->rerun($jobId, $front, $allowAll);
   }
 
   public function createJobGroup($total = null, $data = []): models\JobGroup
@@ -91,5 +92,15 @@ class Client
   public function removeJobGroupFromQueue(int $id): bool
   {
     return $this->jobGroupManager->removeJobGroupFromQueue($id);
+  }
+
+  public function getJob($id)
+  {
+    return $this->jobManager->getJob($id);
+  }
+
+  public function getJobGroup($id)
+  {
+    return $this->jobGroupManager->getJobGroup($id);
   }
 }

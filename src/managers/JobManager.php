@@ -70,21 +70,30 @@ class JobManager extends BaseManager
   }
 
   /**
-   * Rerun a job that previously failed.
-   * @param int $jobId     ID of job to rerun
-   * @param boolean $front Push the new job to the front of the queue?
-   * @return boolean       TRUE if job was successfully added to the queue
+   * Rerun a job
+   * @param int $jobId        ID of job to rerun
+   * @param boolean $front    Push the new job to the front of the queue?
+   * @param boolean $allowAll Allow all jobs (even successful ones) to be rerun
+   * @return boolean          TRUE if job was successfully added to the queue
    * @throws \Exception
    */
-  public function rerun(int $jobId, bool $front = false): bool
+  public function rerun(int $jobId, bool $front = false, bool $allowAll = false): bool
   {
     $job = $this->getJob($jobId);
+
+    if ($job->get('status') === 'pending') {
+      throw new \Exception("Job #$jobId has not run yet. Cannot rerun yet.");
+    }
+
+    if ($job->get('status') === 'processing') {
+      throw new \Exception("Job #$jobId is currently being processed. Cannot rerun yet.");
+    }
 
     if (!$job->get()) {
       throw new \Exception("Job #$jobId not found. Cannot rerun.");
     }
 
-    if ($job->get('status') !== 'failed') {
+    if (!$allowAll && $job->get('status') !== 'failed') {
       throw new \Exception("Job #$jobId did not fail. Cannot rerun.");
     }
 

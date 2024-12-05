@@ -354,131 +354,18 @@ Returns: array
 
 ### CLI
 
-Access the CLI tool by running:
+The command line interface allows you to interact with the queue. To access the tool, run:
 ```bash
 ./vendor/bin/prq
 ```
 
-#### Queue commands
-
-##### __`prq queues:list`__
-
-Get information about all queues. Queues are discovered by looking up active workers, examining the lists of pending and processing jobs, and the count of processed jobs.
-
-Example output:
-
+To list all available commands, run:
 ```bash
-$ ./vendor/bin/prq queues:list
-+-------------------+----------------+--------------+----------------+
-| Queue name        | Active workers | Pending jobs | Processed jobs |
-+-------------------+----------------+--------------+----------------+
-| files_queue       | 1              | 2            | 16             |
-| another_queue     | 0              | 10           | 3              |
-+-------------------+----------------+--------------+----------------+
+./vendor/bin/prq list
 ```
 
-##### __`prq queues:jobs <queuename>`__
-
-List jobs associated with the given queue.
-
-Arguments:
-
-* `queuename`: Name of the queue.
-
-Example output:
-
+To get help with a command, run:
+### Get help with a command
 ```bash
-$ ./vendor/bin/prq queues:jobs files_queue
-+----+----------------------+------------+
-| ID | Datetime initialized | Job name   |
-+----+----------------------+------------+
-| 8  | 2023-09-21T10:38:34  | upload     |
-| 7  | 2023-09-21T10:37:45  | upload     |
-| 6  | 2023-09-21T10:36:02  | delete     |
-| 5  | 2023-09-21T10:35:53  | delete     |
-| 4  | 2023-09-21T10:35:09  | upload     |
-| 3  | 2023-09-21T10:34:21  | upload     |
-| 2  | 2023-09-21T10:32:03  | upload     |
-| 1  | 2023-09-21T10:29:46  | upload     |
-+----+----------------------+------------+
-```
-
-#### Group commands
-
-##### __`prq group:info <id>`__
-
-Get information about a group.
-
-Arguments:
-
-* `id`: ID of the group.
-
-Example output:
-
-```bash
-$ ./vendor/bin/prq group:info 1
-
-+----------------------+------------+ Group #1 ----+-----------------+-------------+
-| Datetime initialized | Total jobs | Pending jobs | Successful jobs | Failed jobs |
-+----------------------+------------+--------------+-----------------+-------------+
-| 2023-12-20T15:06:17  | 30         | 30           | 0               | 0           |
-+----------------------+------------+--------------+-----------------+-------------+
-
-##### __`prq group:jobs <id>`__
-
-List jobs associated with the given group.
-
-Arguments:
-
-* `id`: ID of the group.
-
-Example output:
-
-```bash
-$ ./vendor/bin/prq group:jobs files_queue
-+-----+----------------------+----------+---------+
-| ID  | Datetime initialized | Job name | Status  |
-+-----+----------------------+----------+---------+
-| 121 | 2023-12-20T16:13:06  | upload   | success |
-| 122 | 2023-12-20T16:13:06  | upload   | success |
-| 123 | 2023-12-20T16:13:06  | upload   | success |
-| 124 | 2023-12-20T16:13:06  | upload   | pending |
-+-----+----------------------+----------+---------+
-```
-
-#### Job commands
-
-##### __`prq job:info <id>`__
-
-Get information about the given job.
-
-Arguments:
-
-* `id`: ID of the job.
-
-Example output:
-
-```bash
-$ ./vendor/bin/prq job:info 2
-
-+----------------------+ Job #2 ----+---------+---------+
-| Datetime initialized | Job name   | Status  | Context |
-+----------------------+------------+---------+---------+
-| 2023-09-21T13:51:42  | invalidate | success | n/a     |
-+----------------------+------------+---------+---------+
-```
-
-##### __`prq job:rerun <id>`__
-
-Rerun a failed job.
-
-Arguments:
-
-* `id`: ID of the failed job.
-
-Example output:
-
-```bash
-$ ./vendor/bin/prq job:rerun 2
-Successfully added job #2 to the back of the files_queue queue.
+./vendor/bin/prq queues:list --help
 ```

@@ -173,6 +173,17 @@ class ClientTest extends Base
     $client->rerun(10);
   }
 
+  public function testRerun__jobPending(): void
+  {
+    $client = new ClientMock($this->predis);
+    $client->push('queuename');
+
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('Job #1 has not run yet. Cannot rerun yet.');
+
+    $client->rerun(1);
+  }
+
   public function testRemove(): void
   {
     $client = new ClientMock($this->predis);
@@ -405,6 +416,92 @@ class ClientTest extends Base
 
     // rerun job #2
     $client->rerun(2);
+
+    // set the worker to work
+    $worker->work(false);
+
+    // get updated group
+    $updatedGroup = (new JobGroup($this->predis, 1));
+
+    $this->assertEmpty($updatedGroup->get('pending'));
+    $this->assertEquals($updatedGroup->get('success'), [1, 3, 2]);
+    $this->assertEmpty($updatedGroup->get('failed'));
+
+    $job = (new Job($this->predis, 2));
+    $this->assertEquals('success', $job->get('status'));
+    $this->assertEquals(1, count($job->get('runs')));
+
+    $this->assertEquals(4, $this->predis->get($this->queue->processed));
+  }
+
+  public function testReruntestJobGroup__rerunSuccessfulJob()
+  {
+    $worker = new QueueWorker($this->predis, 'queuename', ['wait' => 0]);
+    $client = new ClientMock($this->predis);
+
+    // create group
+    $group = $client->createJobGroup(3);
+
+    $mock = $this->getMockBuilder(\StdClass::class)
+      ->disableOriginalConstructor()
+      ->addMethods(['callback', 'group_after'])
+      ->getMock();
+
+    $mock->expects($this->exactly(4))
+      ->method('callback')
+      ->with([])
+      ->will($this->onConsecutiveCalls(
+        true,
+        true,
+        true,
+        true // rerun of job #2
+      ));
+
+    $mock->expects($this->exactly(2))
+      ->method('group_after')
+      ->willReturnCallback(fn (string $key, string $value) => match ($mock->numberOfInvocations()) {
+        1 => [$group, true],
+        2 => [$group, true],
+      });
+
+    // add callbacks
+    $worker->addCallback('default', [$mock, 'callback']);
+    $worker->addCallback('group_after', [$mock, 'group_after']);
+
+    // push three jobs to the queue
+    $group->push('queuename');
+    $group->push('queuename');
+    $group->push('queuename');
+
+    // set the worker to work
+    $worker->work(false);
+
+    // assert all jobs succeeded
+    $this->assertEquals('success', (new Job($this->predis, 1))->get('status'));
+    $this->assertEquals('success', (new Job($this->predis, 2))->get('status'));
+    $this->assertEquals('success', (new Job($this->predis, 3))->get('status'));
+
+    // processing queue is empty (jobs already processed)
+    $this->assertEquals(0, $this->predis->llen($this->queue->processing));
+    $this->assertEquals(3, $this->predis->get($this->queue->processed));
+
+    // get updated group
+    $updatedGroup = (new JobGroup($this->predis, 1));
+
+    $this->assertEmpty($updatedGroup->get('pending'));
+    $this->assertEquals($updatedGroup->get('success'), [1, 2, 3]);
+    $this->assertEmpty($updatedGroup->get('failed'));
+
+    // ttls are set
+    $this->assertLessThanOrEqual($this->ttl['failed'], $this->predis->ttl('php-redis-queue:jobs:1'));
+
+    $client->rerun(2, false, true);
+
+    $updatedGroup = (new JobGroup($this->predis, 1));
+
+    $this->assertEquals($updatedGroup->get('pending'), [2]);
+    $this->assertEquals($updatedGroup->get('success'), [1, 3]);
+    $this->assertEmpty($updatedGroup->get('failed'));
 
     // set the worker to work
     $worker->work(false);
