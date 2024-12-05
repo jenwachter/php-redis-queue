@@ -173,6 +173,17 @@ class ClientTest extends Base
     $client->rerun(10);
   }
 
+  public function testRerun__jobPending(): void
+  {
+    $client = new ClientMock($this->predis);
+    $client->push('queuename');
+
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('Job #1 has not run yet. Cannot rerun yet.');
+
+    $client->rerun(1);
+  }
+
   public function testRemove(): void
   {
     $client = new ClientMock($this->predis);

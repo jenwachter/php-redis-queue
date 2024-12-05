@@ -81,6 +81,14 @@ class JobManager extends BaseManager
   {
     $job = $this->getJob($jobId);
 
+    if ($job->get('status') === 'pending') {
+      throw new \Exception("Job #$jobId has not run yet. Cannot rerun yet.");
+    }
+
+    if ($job->get('status') === 'processing') {
+      throw new \Exception("Job #$jobId is currently being processed. Cannot rerun yet.");
+    }
+
     if (!$job->get()) {
       throw new \Exception("Job #$jobId not found. Cannot rerun.");
     }
