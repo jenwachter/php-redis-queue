@@ -23,7 +23,7 @@ class Queue
   public string $processing;
 
   /**
-   * Name of varible that keeps track of how many jobs have processed in this queue
+   * Name of list that contains processed jobs
    * @var string
    */
   public string $processed;
@@ -73,12 +73,12 @@ class Queue
   }
 
   /**
-   * Increments the number of jobs processed in this queue (success or fail)
+   * Adds the ID of the job to the processed lists
    * @return int
    */
   public function onJobCompletion(Job $job)
   {
     $this->removeFromProcessing($job);
-    return $this->redis->incr($this->processed);
+    return $this->redis->rpush($this->processed, $job->id());
   }
 }

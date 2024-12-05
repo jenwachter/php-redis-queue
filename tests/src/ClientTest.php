@@ -259,7 +259,8 @@ class ClientTest extends Base
     $worker->work(false);
 
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(3, $this->predis->get($this->queue->processed));
+    $this->assertEquals(3, $this->predis->llen($this->queue->processed));
+    $this->assertEquals(['1', '2', '3'], $this->predis->lrange($this->queue->processed, 0, -1));
 
     // ttls are set
     $this->assertEquals($this->ttl['success'], $this->predis->ttl('php-redis-queue:groups:1'));
@@ -402,7 +403,8 @@ class ClientTest extends Base
 
     // processing queue is empty (jobs already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(3, $this->predis->get($this->queue->processed));
+    $this->assertEquals(3, $this->predis->llen($this->queue->processed));
+    $this->assertEquals(['1', '2', '3'], $this->predis->lrange($this->queue->processed, 0, -1));
 
     // get updated group
     $updatedGroup = (new JobGroup($this->predis, 1));
@@ -431,7 +433,8 @@ class ClientTest extends Base
     $this->assertEquals('success', $job->get('status'));
     $this->assertEquals(1, count($job->get('runs')));
 
-    $this->assertEquals(4, $this->predis->get($this->queue->processed));
+    $this->assertEquals(4, $this->predis->llen($this->queue->processed));
+    $this->assertEquals(['1', '2', '3', '2'], $this->predis->lrange($this->queue->processed, 0, -1));
   }
 
   public function testReruntestJobGroup__rerunSuccessfulJob()
@@ -483,7 +486,8 @@ class ClientTest extends Base
 
     // processing queue is empty (jobs already processed)
     $this->assertEquals(0, $this->predis->llen($this->queue->processing));
-    $this->assertEquals(3, $this->predis->get($this->queue->processed));
+    $this->assertEquals(3, $this->predis->llen($this->queue->processed));
+    $this->assertEquals(['1', '2', '3'], $this->predis->lrange($this->queue->processed, 0, -1));
 
     // get updated group
     $updatedGroup = (new JobGroup($this->predis, 1));
@@ -517,6 +521,7 @@ class ClientTest extends Base
     $this->assertEquals('success', $job->get('status'));
     $this->assertEquals(1, count($job->get('runs')));
 
-    $this->assertEquals(4, $this->predis->get($this->queue->processed));
+    $this->assertEquals(4, $this->predis->llen($this->queue->processed));
+    $this->assertEquals(['1', '2', '3', '2'], $this->predis->lrange($this->queue->processed, 0, -1));
   }
 }
