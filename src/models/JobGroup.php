@@ -176,13 +176,21 @@ class JobGroup extends BaseModel
 
   public function rerunJob(int $jobId)
   {
-    // remove from failed
+    // remove from failed list
     $failed = $this->get('failed');
     $key = array_search($jobId, $failed);
     if ($key !== false) {
       unset($failed[$key]);
+      $this->withData('failed', array_values($failed));
+    } else {
+      // job did not fail - remove from success list
+      $success = $this->get('success');
+      $key = array_search($jobId, $success);
+      if ($key !== false) {
+        unset($success[$key]);
+        $this->withData('success', array_values($success));
+      }
     }
-    $this->withData('failed', $failed);
 
     // add to pending
     $pending = $this->get('pending');
