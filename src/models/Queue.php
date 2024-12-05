@@ -37,6 +37,11 @@ class Queue
     $this->pending = $base . ':pending';
     $this->processing = $base . ':processing';
     $this->processed = $base . ':processed';
+
+    // mitigate issues migrating from v1.5 to v1.6
+    if ($redis->exists($this->processed) && (string) $redis->type($this->processed) !== 'list') {
+      $redis->del($this->processed);
+    }
   }
 
   public function getJobs(string $which, int $limit = 50)
