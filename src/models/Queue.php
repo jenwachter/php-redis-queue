@@ -48,6 +48,9 @@ class Queue
   {
     $jobs = $this->redis->lrange($this->$which, 0, $limit);
 
+    // remove reruns
+    $jobs = array_unique($jobs);
+
     return array_map(function ($jobId) {
       return json_decode($this->redis->get('php-redis-queue:jobs:'. $jobId));
     }, $jobs);

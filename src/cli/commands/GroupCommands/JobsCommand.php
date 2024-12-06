@@ -42,7 +42,7 @@ class JobsCommand extends Command
       $table = new Table($output);
       $table
         ->setHeaders(['ID', 'Datetime initialized', 'Job name', 'Status'])
-        ->setRows(array_map(fn ($job) => [$job->id, $job->datetime, $job->jobName, $job->status], $jobs));
+        ->setRows(array_map(fn ($job) => [$job->id(), $job->get('datetime'), $job->get('jobName'), $job->get('status')], $jobs));
 
       $table->render();
     }

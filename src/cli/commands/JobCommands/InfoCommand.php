@@ -6,8 +6,6 @@ use PhpRedisQueue\cli\commands\Command;
 use PhpRedisQueue\models\Job;
 use PhpRedisQueue\managers\JobManager;
 use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableSeparator;
-use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -63,7 +61,7 @@ class InfoCommand extends Command
       if (!empty($job['runs'])) {
         $table = new Table($output);
         $table
-          ->setHeaderTitle(sprintf('Previous runs of job #%s', $id))
+          ->setHeaderTitle(sprintf('Runs of job #%s', $id))
           ->setHeaders($this->getJobTableHeaders())
           ->setRows(array_map([$this, 'getJobTableRow'], $job['runs']));
 
