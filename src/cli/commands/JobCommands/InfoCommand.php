@@ -61,7 +61,7 @@ class InfoCommand extends Command
       if (!empty($job['runs'])) {
         $table = new Table($output);
         $table
-          ->setHeaderTitle(sprintf('Previous runs of job #%s', $id))
+          ->setHeaderTitle(sprintf('Runs of job #%s', $id))
           ->setHeaders($this->getJobTableHeaders())
           ->setRows(array_map([$this, 'getJobTableRow'], $job['runs']));
 
