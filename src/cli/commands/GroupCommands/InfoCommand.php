@@ -5,8 +5,6 @@ namespace PhpRedisQueue\cli\commands\GroupCommands;
 use PhpRedisQueue\cli\commands\Command;
 use PhpRedisQueue\managers\JobGroupManager;
 use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Helper\TableSeparator;
-use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
