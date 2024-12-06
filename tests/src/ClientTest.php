@@ -419,6 +419,15 @@ class ClientTest extends Base
     // rerun job #2
     $client->rerun(2);
 
+    $updatedJob = (new Job($this->predis, 2));
+    $this->assertEquals($updatedJob->get('status'), 'pending');
+
+    $updatedGroup = (new JobGroup($this->predis, 1));
+    $this->assertEquals($updatedGroup->get('pending'), [2]);
+    $this->assertEquals($updatedGroup->get('success'), [1, 3]);
+    $this->assertEmpty($updatedGroup->get('failed'));
+    $this->assertFalse($updatedGroup->get('complete'));
+
     // set the worker to work
     $worker->work(false);
 
@@ -501,11 +510,14 @@ class ClientTest extends Base
 
     $client->rerun(2, false, true);
 
-    $updatedGroup = (new JobGroup($this->predis, 1));
+    $updatedJob = (new Job($this->predis, 2));
+    $this->assertEquals($updatedJob->get('status'), 'pending');
 
+    $updatedGroup = (new JobGroup($this->predis, 1));
     $this->assertEquals($updatedGroup->get('pending'), [2]);
     $this->assertEquals($updatedGroup->get('success'), [1, 3]);
     $this->assertEmpty($updatedGroup->get('failed'));
+    $this->assertFalse($updatedGroup->get('complete'));
 
     // set the worker to work
     $worker->work(false);

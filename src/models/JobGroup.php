@@ -197,6 +197,8 @@ class JobGroup extends BaseModel
     $pending[] = $jobId;
     $this->withData('pending', $pending);
 
+    $this->withData('complete', false);
+
     return $this->save();
   }
 }
