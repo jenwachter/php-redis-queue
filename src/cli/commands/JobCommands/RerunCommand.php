@@ -15,13 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RerunCommand extends Command
 {
-  public function __construct(protected JobManager $jobManager, protected QueueManager $queueManager)
-  {
-    parent::__construct();
-  }
-
   protected function configure()
   {
+    parent::configure();
+    
     $this
       ->setName('job:rerun')
       ->setDescription('Rerun a failed job')
@@ -40,6 +37,8 @@ class RerunCommand extends Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    parent::execute($input, $output);
+
     $id = $input->getArgument('id');
     $runNow = $input->getArgument('now') !== false;
 

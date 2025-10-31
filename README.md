@@ -369,3 +369,36 @@ To get help with a command, run:
 ```bash
 ./vendor/bin/prq queues:list --help
 ```
+
+### Connecting to Redis in the CLI
+
+By default, the CLI connects to Redis at `tcp://127.0.0.1:6379`. If you need to customize this connection, you have a couple options:
+
+#### Environment variables
+
+You can configure the connection to Redis using environment variables:
+
+* To replace parts of the default connection string, set any or all of the following: `REDIS_SCHEME`, `REDIS_HOST`, `REDIS_PORT`
+* To override the entire connection string, set `REDIS_URI`
+
+The CLI will automatically use these variables to create the connection string.
+
+##### Examples
+* Setting `REDIS_HOST=my-redis-host` will result in a connection string of `tcp://my-redis-host:6379`
+* Setting `REDIS_URI=unix:/path/to/redis.sock` will result in a connection string of `unix:/path/to/redis.sock`
+
+#### Connection file
+
+To create a more complex connection, create a PHP file that returns an instance of `Predis\Client` and pass the file to the `prq` command via the `--connection` (or `-c`) option.
+
+```php
+<?php
+
+// config/prq.php
+return new \Predis\Client($parameters, $options);
+```
+
+Then pass the file's path to the `prq` command:
+```bash
+$ prq queues:list -c config/prq.php
+```

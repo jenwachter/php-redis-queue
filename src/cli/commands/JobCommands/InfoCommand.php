@@ -12,13 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class InfoCommand extends Command
 {
-  public function __construct(protected JobManager $jobManager)
-  {
-    parent::__construct();
-  }
-
   protected function configure()
   {
+    parent::configure();
+    
     $this
       ->setName('job:info')
       ->setDescription('Get information on a specific job')
@@ -31,6 +28,8 @@ class InfoCommand extends Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    parent::execute($input, $output);
+    
     $id = $input->getArgument('id');
     $job = $this->jobManager->getJob($id)->get();
 

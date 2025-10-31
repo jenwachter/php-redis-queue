@@ -10,13 +10,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ListCommand extends Command
 {
-  public function __construct(protected QueueManager $queueManager)
-  {
-    parent::__construct();
-  }
-
   protected function configure()
   {
+    parent::configure();
+
     $this
       ->setName('queues:list')
       ->setDescription('List queues');
@@ -24,6 +21,8 @@ class ListCommand extends Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    parent::execute($input, $output);
+
     $queues = $this->queueManager->getList();
 
     if (empty($queues)) {
