@@ -12,13 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class JobsCommand extends Command
 {
-  public function __construct(protected QueueManager $queueManager)
-  {
-    parent::__construct();
-  }
-
   protected function configure()
   {
+    parent::configure();
+    
     $this
       ->setName('queues:jobs')
       ->setDescription('List pending jobs associated with a given queue.')
@@ -43,6 +40,8 @@ class JobsCommand extends Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    parent::execute($input, $output);
+    
     $queueName = $input->getArgument('queuename');
     $queueType = $input->getArgument('type');
     $status = $input->getArgument('status');

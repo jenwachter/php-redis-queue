@@ -11,13 +11,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class InfoCommand extends Command
 {
-  public function __construct(protected JobGroupManager $groupManager)
-  {
-    parent::__construct();
-  }
-
   protected function configure()
   {
+    parent::configure();
+    
     $this
       ->setName('group:info')
       ->setDescription('Get information on a specific group')
@@ -30,6 +27,8 @@ class InfoCommand extends Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    parent::execute($input, $output);
+    
     $id = $input->getArgument('gid');
     $group = $this->groupManager->getJobGroup($id)->get();
 

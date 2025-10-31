@@ -12,13 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class JobsCommand extends Command
 {
-  public function __construct(protected JobGroupManager $groupManager)
-  {
-    parent::__construct();
-  }
-
   protected function configure()
   {
+    parent::configure();
+    
     $this
       ->setName('group:jobs')
       ->setDescription('List jobs associated with a given group.')
@@ -31,6 +28,8 @@ class JobsCommand extends Command
 
   protected function execute(InputInterface $input, OutputInterface $output)
   {
+    parent::execute($input, $output);
+    
     $groupId = $input->getArgument('gid');
     $group = $this->groupManager->getJobGroup($groupId);
 
